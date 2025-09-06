@@ -5,25 +5,23 @@ function addItem() {
     const newItem = document.createElement('div');
     newItem.className = 'item-section';
     newItem.innerHTML = `
-        <div class="item-row">
-            <div class="form-group">
-                <label>รายละเอียดสินค้า:</label>
-                <input type="text" class="item-description" value="">
-            </div>
-            <div class="form-group">
-                <label>จำนวน:</label>
-                <input type="number" class="item-quantity" value="1" min="1">
-            </div>
-            <div class="form-group">
-                <label>ราคาต่อหน่วย:</label>
-                <input type="number" class="item-price" value="0" min="0" step="0.01">
-            </div>
-            <div class="form-group">
-                <label>รวม:</label>
-                <input type="number" class="item-total" readonly>
-            </div>
-            <button type="button" class="remove-btn" onclick="removeItem(this)">🗑️</button>
+        <div class="form-group">
+            <label>รายละเอียดสินค้า:</label>
+            <textarea class="item-description" rows="2" style="resize: vertical;"></textarea>
         </div>
+        <div class="form-group">
+            <label>จำนวน:</label>
+            <input type="number" class="item-quantity" value="1" min="1">
+        </div>
+        <div class="form-group">
+            <label>ราคาต่อหน่วย:</label>
+            <input type="number" class="item-price" value="0" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+            <label>รวม:</label>
+            <input type="number" class="item-total" readonly>
+        </div>
+        <button type="button" class="remove-btn" onclick="removeItem(this)">🗑️</button>
     `;
     container.appendChild(newItem);
     attachEventListeners(newItem);
@@ -59,7 +57,7 @@ function attachEventListeners(container = document) {
 }
 
 function calculateItemTotal(event) {
-    const row = event.target.closest('.item-row');
+    const row = event.target.closest('.item-section'); // ✅ แก้จาก item-row
     const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
     const price = parseFloat(row.querySelector('.item-price').value) || 0;
     const total = quantity * price;
@@ -206,7 +204,8 @@ function generatePDFContent() {
 
     // Determine PRICE EXCLUDE VAT display
     const priceExcludeVatDisplay = (afterDiscount === 0 || afterDiscount === subtotal) ? '-' : afterDiscount.toLocaleString('th-TH', {minimumFractionDigits: 2});
-
+    const canvas = document.getElementById('signCompany');
+    const signatureDataURL = canvas.toDataURL('image/png');
     return `
         <div style="position: relative; min-height: 100vh; padding: 20px;">
             <!-- Logo positioned absolutely in top-left -->
@@ -274,19 +273,22 @@ function generatePDFContent() {
                 <!-- Left side - Company representative -->
                 <div style="text-align: center; width: 45%;">
                     <div style="margin-bottom: 20px;">ขอแสดงความนับถือ</div>
-                    <div style="margin-bottom: 80px;"></div>
+                    <div style="margin-bottom: 10px;">
+                        <img src="${signatureDataURL}" alt="ลายเซ็น" style="max-height: 80px;" />
+                    </div>
                     <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 5px;"></div>
                     <div style="font-size: 14px;">
-                        <strong>นางสาวพรทิพา สุทธิพิบูลย์</strong><br>
-                        โทร: 095 9165976<br>
-                        E-mail: idms02021@gmail.com
+                        <strong>${salesName}</strong><br>
+                        โทร: ${salesPhone}<br>
+                        E-mail: ${salesEmail}
                     </div>
                 </div>
+
 
                 <!-- Right side - Customer signature -->
                 <div style="text-align: center; width: 45%;">
                     <div style="margin-bottom: 20px;">ลายเซ็นลูกค้า</div>
-                    <div style="margin-bottom: 80px;"></div>
+                    <div style="margin-bottom: 110px;"></div>
                     <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 5px;"></div>
                     <div style="font-size: 14px;">
                         ${customerName}<br>
@@ -360,11 +362,77 @@ function generatePDF() {
         alert('เกิดข้อผิดพลาดในการสร้าง PDF กรุณาลองใหม่อีกครั้ง');
     });
 }
+// -----------------------------
+// ✍️ ฟังก์ชันสำหรับลายเซ็น
+// -----------------------------
+let isDrawing = false;
+let ctx = null;
+
+function initSignaturePad() {
+    const canvas = document.getElementById('signCompany');
+    ctx = canvas.getContext('2d');
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('mousemove', draw);
+
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+    canvas.addEventListener('touchmove', drawTouch);
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    ctx.beginPath();
+    ctx.moveTo(getX(e), getY(e));
+    e.preventDefault();
+}
+
+function stopDrawing(e) {
+    isDrawing = false;
+    e.preventDefault();
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    ctx.lineTo(getX(e), getY(e));
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    e.preventDefault();
+}
+
+function drawTouch(e) {
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent("mousemove", {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    draw(mouseEvent);
+}
+
+function getX(e) {
+    return e.clientX - e.target.getBoundingClientRect().left;
+}
+
+function getY(e) {
+    return e.clientY - e.target.getBoundingClientRect().top;
+}
+
+function clearCanvas(id) {
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     attachEventListeners();
     calculateTotals();
+    initSignaturePad();
     
     // Set current date as default
     const today = new Date().toISOString().split('T')[0];
