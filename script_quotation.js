@@ -371,55 +371,61 @@ let ctx = null;
 function initSignaturePad() {
     const canvas = document.getElementById('signCompany');
     ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
+    // Desktop events
     canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
-    canvas.addEventListener('mousemove', draw);
 
+    // Mobile/Touch events
     canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw); // ใช้ฟังก์ชัน draw ตัวเดียวกันได้
     canvas.addEventListener('touchend', stopDrawing);
     canvas.addEventListener('touchcancel', stopDrawing);
-    canvas.addEventListener('touchmove', drawTouch);
 }
 
 function startDrawing(e) {
     isDrawing = true;
     ctx.beginPath();
-    ctx.moveTo(getX(e), getY(e));
+    const pos = getPosition(e);
+    ctx.moveTo(pos.x, pos.y);
     e.preventDefault();
 }
 
 function stopDrawing(e) {
-    isDrawing = false;
+    if (isDrawing) {
+        ctx.closePath();
+        isDrawing = false;
+    }
     e.preventDefault();
 }
 
 function draw(e) {
     if (!isDrawing) return;
-    ctx.lineTo(getX(e), getY(e));
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    const pos = getPosition(e);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     e.preventDefault();
 }
 
-function drawTouch(e) {
-    const touch = e.touches[0];
-    const mouseEvent = new MouseEvent("mousemove", {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-    });
-    draw(mouseEvent);
-}
+function getPosition(e) {
+    const rect = e.target.getBoundingClientRect();
+    let x, y;
 
-function getX(e) {
-    return e.clientX - e.target.getBoundingClientRect().left;
-}
+    if (e.touches && e.touches.length > 0) {
+        x = e.touches[0].clientX - rect.left;
+        y = e.touches[0].clientY - rect.top;
+    } else {
+        x = e.clientX - rect.left;
+        y = e.clientY - rect.top;
+    }
 
-function getY(e) {
-    return e.clientY - e.target.getBoundingClientRect().top;
+    return { x, y };
 }
 
 function clearCanvas(id) {
