@@ -365,11 +365,25 @@ function generatePDF() {
 // -----------------------------
 // ✍️ ฟังก์ชันสำหรับลายเซ็น
 // -----------------------------
+// -----------------------------
+// ✍️ ฟังก์ชันสำหรับลายเซ็น (แก้ไขใหม่)
+// -----------------------------
 let isDrawing = false;
 let ctx = null;
 
+function resizeCanvas() {
+    const canvas = document.getElementById('signCompany');
+    if (!canvas) return;
+    // กำหนดขนาด canvas ตามขนาด element จริง
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+
 function initSignaturePad() {
     const canvas = document.getElementById('signCompany');
+    if (!canvas) return;
+
+    resizeCanvas(); // เรียกครั้งแรกตอน init
     ctx = canvas.getContext('2d');
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
@@ -382,11 +396,14 @@ function initSignaturePad() {
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
 
-    // Mobile/Touch events
-    canvas.addEventListener('touchstart', startDrawing);
-    canvas.addEventListener('touchmove', draw); // ใช้ฟังก์ชัน draw ตัวเดียวกันได้
-    canvas.addEventListener('touchend', stopDrawing);
-    canvas.addEventListener('touchcancel', stopDrawing);
+    // Mobile/Touch events (เพิ่ม { passive: false })
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing, { passive: false });
+    canvas.addEventListener('touchcancel', stopDrawing, { passive: false });
+
+    // ปรับ canvas ใหม่เมื่อขนาดหน้าจอเปลี่ยน
+    window.addEventListener('resize', resizeCanvas);
 }
 
 function startDrawing(e) {
@@ -424,7 +441,6 @@ function getPosition(e) {
         x = e.clientX - rect.left;
         y = e.clientY - rect.top;
     }
-
     return { x, y };
 }
 
@@ -434,12 +450,12 @@ function clearCanvas(id) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-// Initialize when page loads
+// ✅ เรียก initSignaturePad ตอน DOM โหลดเสร็จ
 document.addEventListener('DOMContentLoaded', function() {
     attachEventListeners();
     calculateTotals();
     initSignaturePad();
-    
+
     // Set current date as default
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('quotationDate').value = today;
