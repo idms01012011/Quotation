@@ -13,7 +13,7 @@ h1.title {
 
 /* ========== Container ========== */
 .cards {
-  display: flex;
+  display: inline-block;
   flex-direction: column; /* เรียงลงมาแบบการ์ดต่อการ์ด */
   gap: 20px;
   padding: 20px;
