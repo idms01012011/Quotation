@@ -376,12 +376,12 @@ function validateFormData(sheet, data) {
 // ===== Fixed: ฟังก์ชันเลขที่ใบงาน & ลำดับ =====
 function generateNextWorkNo() {
     const data = currentData["service"] || [];
-    if (data.length === 0) return "SR001";
+    if (data.length === 0) return "IDMS001";
     
     // หาหมายเลขล่าสุดที่ถูกต้อง
     const workNos = data.map(row => {
         const workNo = String(row["เลขที่ใบงาน"] || "");
-        const match = workNo.match(/SR(\d+)/);
+        const match = workNo.match(/IDMS(\d+)/);
         return match ? parseInt(match[1], 10) : 0;
     }).filter(num => !isNaN(num) && num > 0);
     
