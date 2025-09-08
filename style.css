@@ -13,101 +13,44 @@ h1.title {
 }
 
 /* ================= Container ================= */
-.cards {
-  display: auto;
-  flex-direction: column;
-  gap: 20px;
-  padding: 15px;
-}
-
-/* ================= Card Section ================= */
 .data-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow-x: auto; /* เลื่อนแนวนอนเมื่อหน้าจอเล็ก */
+  overflow-x: auto; /* เลื่อนแนวนอนถ้า table กว้าง */
 }
 
-.data-section h3 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.data-section button {
-  padding: 6px 12px;
-  border: none;
-  background: #3498db;
-  color: #fff;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 5px;
-}
-
-.data-section button:hover {
-  background: #2980b9;
-}
-
-/* ================= Table ================= */
 .data-table {
   width: 100%;
   border-collapse: collapse;
   margin: 10px 0;
   font-size: 0.9rem;
   text-align: left;
-  min-width: 1000px; /* กำหนดขนาดขั้นต่ำให้เลื่อนแทนล้น */
+  min-width: 600px; /* ลดขนาดขั้นต่ำ ให้ scroll บนมือถือ */
+}
+
+.data-table td {
+  white-space: normal; 
+  max-width: 180px;
+  word-break: break-word; /* ตัดคำยาว ๆ ลงบรรทัด */
 }
 
 .data-table th,
 .data-table td {
   border: 1px solid #ddd;
   padding: 6px 8px;
-  word-break: normal; /* ตัดคำยาวเกิน */
 }
 
-.data-table th {
-  background-color: #f4f4f4;
-  font-weight: bold;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-/* ปรับคอลัมน์ td ให้ wrap ข้อความได้ */
-.data-table td {
-  white-space: normal; 
-  max-width: 180px; 
-}
-
-/* คอลัมน์ “จัดการ” */
 .data-table th:last-child,
 .data-table td:last-child {
   width: 130px;
   text-align: center;
-  white-space: nowrap;
+  white-space: nowrap; /* ปุ่มไม่ wrap */
 }
 
-/* สีสลับแถว */
-.data-table tr:nth-child(even) {
-  background-color: #fafafa;
+/* Responsive font และ padding */
+@media screen and (max-width: 480px) {
+  .data-table { font-size: 0.75rem; min-width: 400px; }
+  .data-table td, .data-table th { padding: 4px 6px; }
 }
 
-/* ================= Action Buttons ================= */
-.data-table td button {
-  padding: 4px 6px;
-  margin: 2px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.75rem;
-}
-
-.data-table td button:hover {
-  opacity: 0.8;
-}
 
 .btn-edit { background: #27ae60; color: #fff; }
 .btn-del { background: #e74c3c; color: #fff; }
