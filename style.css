@@ -1,4 +1,4 @@
-/* ========== General ========== */
+/* ================= General ================= */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f5f6fa;
@@ -9,75 +9,80 @@ body {
 h1.title {
   text-align: center;
   margin: 20px 0;
+  font-size: 1.6rem;
 }
 
-/* ========== Container ========== */
+/* ================= Container ================= */
 .cards {
   display: flex;
-  flex-direction: column; /* เรียงลงมาแบบการ์ดต่อการ์ด */
+  flex-direction: column;
   gap: 20px;
-  padding: 20px;
+  padding: 15px;
 }
 
-/* ========== Card Section ========== */
+/* ================= Card Section ================= */
 .data-section {
   background: #fff;
   border-radius: 12px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow-x: auto; /* เลื่อนแนวนอนเมื่อหน้าจอเล็ก */
 }
 
 .data-section h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 18px;
+  font-size: 1.2rem;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .data-section button {
-  padding: 4px 10px;
+  padding: 6px 12px;
   border: none;
   background: #3498db;
   color: #fff;
   border-radius: 6px;
   cursor: pointer;
+  margin-top: 5px;
 }
 
 .data-section button:hover {
   background: #2980b9;
 }
 
-/* ========== Table ========== */
+/* ================= Table ================= */
 .data-table {
   width: 100%;
   border-collapse: collapse;
   margin: 10px 0;
-  font-size: 14px;
+  font-size: 0.9rem;
   text-align: left;
+  min-width: 500px; /* กำหนดขนาดขั้นต่ำให้เลื่อนแทนล้น */
 }
 
 .data-table th,
 .data-table td {
   border: 1px solid #ddd;
   padding: 6px 8px;
+  word-break: break-word; /* ตัดคำยาวเกิน */
 }
 
 .data-table th {
   background-color: #f4f4f4;
   font-weight: bold;
   text-align: center;
+  font-size: 0.9rem;
 }
 
-/* ปรับคอลัมน์ td ให้เหมาะกับเนื้อหา */
+/* ปรับคอลัมน์ td ให้ wrap ข้อความได้ */
 .data-table td {
-  max-width: 180px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; 
+  max-width: 180px; 
 }
 
-/* ปรับคอลัมน์ “จัดการ” ให้เล็กลง */
+/* คอลัมน์ “จัดการ” */
 .data-table th:last-child,
 .data-table td:last-child {
   width: 130px;
@@ -90,14 +95,14 @@ h1.title {
   background-color: #fafafa;
 }
 
-/* ========== Action Buttons ========== */
+/* ================= Action Buttons ================= */
 .data-table td button {
   padding: 4px 6px;
   margin: 2px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .data-table td button:hover {
@@ -108,7 +113,7 @@ h1.title {
 .btn-del { background: #e74c3c; color: #fff; }
 .btn-pdf { background: #f39c12; color: #fff; }
 
-/* ========== Modal ========== */
+/* ================= Modal ================= */
 .modal {
   display: none;
   position: fixed;
@@ -129,12 +134,13 @@ h1.title {
   border-radius: 12px;
   max-height: 90vh;
   overflow-y: auto;
-  min-width: 350px;
+  width: 90%;
+  max-width: 500px;
 }
 
 .modal-content form label {
   display: block;
-  margin: 8px 0;
+  margin: 8px 0 4px 0;
 }
 
 .modal-content form input,
@@ -142,7 +148,7 @@ h1.title {
 .modal-content form select {
   width: 100%;
   padding: 6px;
-  margin-top: 4px;
+  margin-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -157,7 +163,7 @@ h1.title {
 .modal-content form button[type="submit"] { background: #27ae60; color: #fff; }
 .modal-content form button[type="button"] { background: #e74c3c; color: #fff; }
 
-/* ========== Signature Popup ========== */
+/* ================= Signature Popup ================= */
 canvas {
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -182,7 +188,7 @@ canvas {
   opacity: 0.8;
 }
 
-/* ========== Image Preview ========== */
+/* ================= Image Preview ================= */
 .preview {
   max-width: 80px;
   max-height: 50px;
@@ -192,20 +198,48 @@ canvas {
   border: 1px solid #ccc;
 }
 
-/* สไตล์สำหรับปุ่ม 'ใบเสนอราคา' (Change Page Button) */
+/* ================= Change Page Button ================= */
 .change-page-btn {
-  display: inline-block; /* ทำให้สามารถกำหนดขนาดและระยะห่างได้ */
-  padding: 12px 25px; /* ระยะห่างภายในปุ่ม */
-  border-radius: 8px;
-  background: #3d3bcf; /* สีพื้นหลังของปุ่ม */
-  color: #fff; /* สีข้อความ */
-  text-decoration: none; /* ลบเส้นใต้จากลิงก์ */
-  font-weight: 600;
-  box-shadow: 0 4px 4px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติ */
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* เพิ่ม transition สำหรับ hover effect */
-  margin: 20px; /* จัดให้อยู่ตรงกลาง */
   display: block;
-  max-width: 95px; /* จำกัดความกว้างของปุ่ม */
-  position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
-  z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
+  padding: 12px 25px;
+  border-radius: 8px;
+  background: #3d3bcf;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 20px auto;
+  max-width: 95px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* ================= Responsive ================= */
+@media screen and (max-width: 768px) {
+  h1.title { font-size: 1.4rem; }
+  .data-section h3 { font-size: 1rem; flex-direction: column; align-items: flex-start; }
+  .data-section button { font-size: 0.85rem; padding: 5px 10px; }
+
+  .data-table {
+    font-size: 0.8rem;
+    min-width: 400px;
+  }
+
+  .data-table td, .data-table th {
+    padding: 4px 6px;
+  }
+
+  .change-page-btn { padding: 10px 18px; font-size: 0.85rem; }
+}
+
+@media screen and (max-width: 480px) {
+  .cards { padding: 10px; gap: 15px; }
+  h1.title { font-size: 1.2rem; }
+  .data-section { padding: 10px; }
+  .data-table { font-size: 0.75rem; min-width: 350px; }
+  .data-table td, .data-table th { padding: 3px 4px; }
+  .data-section button { font-size: 0.75rem; padding: 4px 8px; }
+  .change-page-btn { padding: 8px 14px; font-size: 0.8rem; }
 }
