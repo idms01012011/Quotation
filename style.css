@@ -82,13 +82,13 @@ h1.title {
 .data-table td {
   white-space: normal;
   max-width: 150px;
-  overflow-wrap: break-word;
+  overflow-wrap: auto;
 }
 
 /* คอลัมน์ “จัดการ” */
 .data-table th:last-child,
 .data-table td:last-child {
-  width: 110px;
+  width: auto;
   text-align: center;
   white-space: nowrap; /* ปุ่มไม่ wrap */
 }
