@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbzfbYPOp9hcU7RuEmDZB8NsA0GkGryyUrUoPlAF9bSwAW-dwvOKM8bnfqsw9jgOdunUdw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbzQ0ReETW8RVuT1nG-F5nkKHcK_1k-SBUgWEIZ2--efB2j9RqQGWS1wipU6XMMW8tUbPw/exec";
 
 // ✅ FIX: เพิ่ม "id" เป็นฟิลด์แรกในทุก schema และเพิ่มฟิลด์รูปภาพ
 const schemas = {
