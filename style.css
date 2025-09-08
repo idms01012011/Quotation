@@ -59,7 +59,7 @@ h1.title {
   margin: 10px 0;
   font-size: 0.9rem;
   text-align: left;
-  min-width: 500px; /* กำหนดขนาดขั้นต่ำให้เลื่อนแทนล้น */
+  min-width: 1000px; /* กำหนดขนาดขั้นต่ำให้เลื่อนแทนล้น */
 }
 
 .data-table th,
