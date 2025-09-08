@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbw38WWSoHnh7kS7keCARGEh-EjGQKS_qlkF5DsRkGaKbm1tVJNnBRv7OYloXa8Uzvs7Fw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbw-fyaoWmItvaWTrn6pdz23hWxXcuBJ2nyKhdo7_NK5jyBz6pEUpOHQ3ugRBhWLtDTudw/exec";
 
 // ✅ FIX: เพิ่ม "id" เป็นฟิลด์แรกในทุก schema และเพิ่มฟิลด์รูปภาพ
 const schemas = {
@@ -127,6 +127,51 @@ async function loadSheetData(sheet) {
 }
 
 // ===== แสดงตาราง =====
+// ✅ แก้ไขฟังก์ชัน createImageElement ให้เรียบง่ายลง
+function createImageElement(src, isSignature = false) {
+    const img = document.createElement("img");
+    img.classList.add("preview");
+    if (isSignature) {
+        img.classList.add("signature-preview");
+    }
+
+    // --- ส่วนแก้ไข ---
+    // 1. แก้ไขการสร้าง Fallback URLs ที่ไม่สมบูรณ์
+    //    ฟังก์ชัน .replace() ต้องการ 2 ค่า คือ (สิ่งที่ต้องการค้นหา, สิ่งที่จะมาแทนที่)
+    //    นี่คือตัวอย่างการแปลง URL รูปแบบหนึ่งไปเป็นอีกรูปแบบหนึ่ง
+    const fallbackUrls = [
+        src, // URL เดิมที่ได้รับมา
+        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/thumbnail?id='), // URL สำรอง 1
+        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/uc?id=')      // URL สำรอง 2
+    ];
+
+    let currentIndex = 0;
+
+    // 2. สร้างฟังก์ชันสำหรับลองโหลด URL ถัดไป
+    function tryNextUrl() {
+        if (currentIndex < fallbackUrls.length) {
+            img.src = fallbackUrls[currentIndex];
+            currentIndex++;
+        } else {
+            // หากลองทุก URL แล้วยังล้มเหลว ให้แสดงภาพสำรอง (placeholder)
+            img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZjlmYSIgc3Ryb2tlPSIjZGVlMmU2IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNiNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
+            img.alt = "ไม่สามารถโหลดรูปได้";
+            img.title = "รูปภาพไม่สามารถแสดงได้";
+        }
+    }
+
+    // 3. กำหนด Event Handler ทั้งหมดให้อยู่ด้วยกัน
+    img.onerror = tryNextUrl; // เมื่อโหลดรูปภาพล้มเหลว ให้เรียกใช้ tryNextUrl
+    img.onclick = () => openImageModal(img.src);
+
+    // 4. เริ่มต้นการโหลดรูปภาพด้วย URL แรก
+    tryNextUrl();
+
+    // 5. ย้าย return มาไว้ท้ายสุดของฟังก์ชัน
+    return img;
+}
+
+// ใช้ฟังก์ชันนี้แทนการสร้าง img element ในฟังก์ชัน renderTable
 function renderTable(sheet, data) {
     const table = document.getElementById("table-" + sheet);
     if (!table) return;
@@ -137,7 +182,6 @@ function renderTable(sheet, data) {
     const cols = displayColumns[sheet] || schemas[sheet].filter(c => c !== 'id');
     thead.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "<th>จัดการ</th></tr>";
 
-    // ✅ จำกัดให้แสดงแค่ 5 แถวแรก
     const displayData = data.slice(0, 5);
     const hasMore = data.length > 5;
 
@@ -146,16 +190,10 @@ function renderTable(sheet, data) {
         cols.forEach(c => {
             const td = document.createElement("td");
             if (c.includes("รูปภาพ") && row[c]) {
-                const img = document.createElement("img");
-                img.src = row[c];
-                img.classList.add("preview");
-                img.onclick = () => openImageModal(row[c]);
+                const img = createImageElement(row[c]);
                 td.appendChild(img);
             } else if (c.includes("ลายเซ็น") && row[c]) {
-                const img = document.createElement("img");
-                img.src = row[c];
-                img.classList.add("preview", "signature-preview");
-                img.onclick = () => openImageModal(row[c]);
+                const img = createImageElement(row[c], true);
                 td.appendChild(img);
             } else {
                 td.textContent = row[c] || "";
@@ -189,7 +227,6 @@ function renderTable(sheet, data) {
         tbody.appendChild(tr);
     });
 
-    // ✅ เพิ่มแถวแสดงจำนวนรวมถ้ามีข้อมูลมากกว่า 5 แถว
     if (hasMore) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
@@ -248,16 +285,10 @@ function renderFullTableContent(sheet, data) {
         cols.forEach(c => {
             const td = document.createElement("td");
             if (c.includes("รูปภาพ") && row[c]) {
-                const img = document.createElement("img");
-                img.src = row[c];
-                img.classList.add("preview");
-                img.onclick = () => openImageModal(row[c]);
+                const img = createImageElement(row[c]);
                 td.appendChild(img);
             } else if (c.includes("ลายเซ็น") && row[c]) {
-                const img = document.createElement("img");
-                img.src = row[c];
-                img.classList.add("preview", "signature-preview");
-                img.onclick = () => openImageModal(row[c]);
+                const img = createImageElement(row[c], true);
                 td.appendChild(img);
             } else {
                 td.textContent = row[c] || "";
@@ -411,6 +442,7 @@ function compressImage(file, maxWidth = 800, quality = 0.7) {
         img.src = URL.createObjectURL(file);
     });
 }
+
 
 // ===== Enhanced Modal Add/Edit with Dropdown Support =====
 function openSection(sheet, mode = "add", rowData = null) {
@@ -701,10 +733,68 @@ async function deleteRow(id, sheet) {
     }
 }
 
-// ===== PDF mock =====
+// ===== PDF =====
 function generatePDF(row) {
-    showNotification(`กำลังสร้าง PDF สำหรับ ${row["เลขที่ใบงาน"]}`, 'info');
-    // TODO: Implement actual PDF generation
+    const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    const doc = new jsPDFLib();
+    doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
+    doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
+    doc.setFont("THSarabunNew");
+    doc.setFontSize(12);
+
+    let y = 10;
+    try {
+        doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
+    } catch (e) {}
+    y += 25;
+
+    doc.setFontSize(20);
+    doc.setTextColor(0, 0, 255);
+    doc.setFont("THSarabunNew", "bold"); 
+    doc.text("Service Report", 105, y, { align: 'center' }); 
+    y += 10;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+
+    const printLine = (label1, val1, label2, val2) => {
+        doc.setFont("THSarabunNew", "bold");
+        doc.text(`${label1}:`, 20, y);
+        doc.setFont("THSarabunNew", "normal");
+        doc.text(`${val1 || ''}`, 50, y);
+
+        doc.setFont("THSarabunNew", "bold");
+        doc.text(`${label2}:`, 120, y);
+        doc.setFont("THSarabunNew", "normal");
+        doc.text(`${val2 || ''}`, 150, y);
+        y += 8;
+    };
+
+    printLine("เลขที่ / No", row["เลขที่ใบงาน"], "ประเภทงาน", row["ประเภทงาน"]);
+    printLine("ชื่อโรงพยาบาล", row["ชื่อโรงพยาบาล"], "วันที่", row["วันที่เปิดงาน"]);
+    printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
+    printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
+
+    doc.text(`อาการที่แจ้งเสีย: ${row["อาการที่แจ้งเสีย"] || ''}`, 20, y);
+    y += 10;
+    doc.text(`ผลการซ่อม: ${row["ผลการซ่อม"] || ''}`, 20, y);
+    y += 10;
+    doc.text(`รับประกัน: ${row["รับประกัน"] || ''}`, 20, y);
+    y += 10;
+
+    if (row["รูปภาพ1"]) doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
+    if (row["รูปภาพ2"]) doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
+
+    return doc;
+}
+
+function previewPDF(row) {
+    const doc = generatePDF(row);
+    window.open(doc.output('bloburl'), '_blank');
+}
+
+function downloadPDF(row) {
+    const doc = generatePDF(row);
+    doc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
 }
 
 // ===== Fixed: Signature System =====
