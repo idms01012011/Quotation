@@ -4,53 +4,113 @@ body {
   background: #f5f6fa;
   margin: 0;
   padding: 0;
+  font-size: 14px; /* ตัวหนังสือหลัก */
 }
 
 h1.title {
   text-align: center;
-  margin: 20px 0;
-  font-size: 1.6rem;
+  margin: 15px 0;
+  font-size: 1.4rem;
 }
 
 /* ================= Container ================= */
-.data-section {
-  overflow-x: auto; /* เลื่อนแนวนอนถ้า table กว้าง */
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px;
 }
 
+.data-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow-x: auto; /* เลื่อนแนวนอนเมื่อ table กว้าง */
+}
+
+.data-section h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.data-section button {
+  padding: 4px 8px;
+  border: none;
+  background: #3498db;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 5px;
+  font-size: 0.75rem;
+}
+
+.data-section button:hover {
+  background: #2980b9;
+}
+
+/* ================= Table ================= */
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 10px 0;
-  font-size: 0.9rem;
+  margin: 8px 0;
+  font-size: 0.8rem;
   text-align: left;
-  min-width: 600px; /* ลดขนาดขั้นต่ำ ให้ scroll บนมือถือ */
-}
-
-.data-table td {
-  white-space: normal; 
-  max-width: 180px;
-  word-break: break-word; /* ตัดคำยาว ๆ ลงบรรทัด */
+  min-width: 350px; /* ลดขนาดขั้นต่ำ */
 }
 
 .data-table th,
 .data-table td {
   border: 1px solid #ddd;
-  padding: 6px 8px;
+  padding: 5px 6px;
+  word-break: break-word;
+  box-sizing: border-box;
 }
 
+.data-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+/* ปรับคอลัมน์ td ให้ wrap ข้อความได้ */
+.data-table td {
+  white-space: normal;
+  max-width: 150px;
+  overflow-wrap: break-word;
+}
+
+/* คอลัมน์ “จัดการ” */
 .data-table th:last-child,
 .data-table td:last-child {
-  width: 130px;
+  width: 110px;
   text-align: center;
   white-space: nowrap; /* ปุ่มไม่ wrap */
 }
 
-/* Responsive font และ padding */
-@media screen and (max-width: 480px) {
-  .data-table { font-size: 0.75rem; min-width: 400px; }
-  .data-table td, .data-table th { padding: 4px 6px; }
+/* สีสลับแถว */
+.data-table tr:nth-child(even) {
+  background-color: #fafafa;
 }
 
+/* ================= Action Buttons ================= */
+.data-table td button {
+  padding: 3px 5px;
+  margin: 2px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.65rem;
+}
+
+.data-table td button:hover {
+  opacity: 0.8;
+}
 
 .btn-edit { background: #27ae60; color: #fff; }
 .btn-del { background: #e74c3c; color: #fff; }
@@ -73,34 +133,37 @@ h1.title {
 
 .modal-content {
   background: #fff;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 15px;
+  border-radius: 10px;
   max-height: 90vh;
   overflow-y: auto;
   width: 90%;
-  max-width: 500px;
+  max-width: 450px;
 }
 
 .modal-content form label {
   display: block;
-  margin: 8px 0 4px 0;
+  margin: 6px 0 4px 0;
+  font-size: 0.8rem;
 }
 
 .modal-content form input,
 .modal-content form textarea,
 .modal-content form select {
   width: 100%;
-  padding: 6px;
-  margin-bottom: 8px;
+  padding: 5px;
+  margin-bottom: 6px;
   box-sizing: border-box;
+  font-size: 0.8rem;
 }
 
 .modal-content form button {
-  margin: 5px 2px;
-  padding: 6px 12px;
+  margin: 4px 2px;
+  padding: 5px 10px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 0.75rem;
 }
 
 .modal-content form button[type="submit"] { background: #27ae60; color: #fff; }
@@ -120,11 +183,12 @@ canvas {
 }
 
 .signature-popup button {
-  padding: 4px 10px;
-  margin: 0 4px;
+  padding: 3px 6px;
+  margin: 0 3px;
   border-radius: 6px;
   border: none;
   cursor: pointer;
+  font-size: 0.75rem;
 }
 
 .signature-popup button:hover {
@@ -133,8 +197,8 @@ canvas {
 
 /* ================= Image Preview ================= */
 .preview {
-  max-width: 80px;
-  max-height: 50px;
+  max-width: 70px;
+  max-height: 40px;
   display: block;
   margin-top: 4px;
   border-radius: 4px;
@@ -144,45 +208,38 @@ canvas {
 /* ================= Change Page Button ================= */
 .change-page-btn {
   display: block;
-  padding: 12px 25px;
+  padding: 8px 14px;
   border-radius: 8px;
   background: #3d3bcf;
   color: #fff;
   text-decoration: none;
   font-weight: 600;
-  box-shadow: 0 4px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 3px 3px rgba(0,0,0,0.2);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 20px auto;
-  max-width: 95px;
+  margin: 15px auto;
+  max-width: 90px;
   text-align: center;
   position: relative;
   z-index: 1;
+  font-size: 0.75rem;
 }
 
 /* ================= Responsive ================= */
 @media screen and (max-width: 768px) {
-  h1.title { font-size: 1.4rem; }
-  .data-section h3 { font-size: 1rem; flex-direction: column; align-items: flex-start; }
-  .data-section button { font-size: 0.85rem; padding: 5px 10px; }
-
-  .data-table {
-    font-size: 0.8rem;
-    min-width: 400px;
-  }
-
-  .data-table td, .data-table th {
-    padding: 4px 6px;
-  }
-
-  .change-page-btn { padding: 10px 18px; font-size: 0.85rem; }
+  h1.title { font-size: 1.2rem; }
+  .data-section h3 { font-size: 0.9rem; flex-direction: column; align-items: flex-start; }
+  .data-section button { font-size: 0.7rem; padding: 3px 6px; }
+  .data-table { font-size: 0.7rem; min-width: 300px; }
+  .data-table td button { font-size: 0.6rem; padding: 2px 4px; }
+  .change-page-btn { font-size: 0.7rem; padding: 6px 12px; }
 }
 
 @media screen and (max-width: 480px) {
-  .cards { padding: 10px; gap: 15px; }
-  h1.title { font-size: 1.2rem; }
-  .data-section { padding: 10px; }
-  .data-table { font-size: 0.75rem; min-width: 350px; }
-  .data-table td, .data-table th { padding: 3px 4px; }
-  .data-section button { font-size: 0.75rem; padding: 4px 8px; }
-  .change-page-btn { padding: 8px 14px; font-size: 0.8rem; }
+  h1.title { font-size: 1rem; }
+  .data-section h3 { font-size: 0.85rem; }
+  .data-section { padding: 8px; }
+  .data-table { font-size: 0.65rem; min-width: 250px; }
+  .data-table td, .data-table th { padding: 2px 3px; }
+  .data-table td button { font-size: 0.55rem; padding: 2px 3px; }
+  .change-page-btn { font-size: 0.65rem; padding: 5px 10px; max-width: 80px; }
 }
