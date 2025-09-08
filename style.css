@@ -1,96 +1,88 @@
-/* ================= General ================= */
+/* ========== General ========== */
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f5f6fa;
   margin: 0;
   padding: 0;
-  font-size: 14px; /* ตัวหนังสือหลัก */
 }
 
 h1.title {
   text-align: center;
-  margin: 15px 0;
-  font-size: 1.4rem;
+  margin: 20px 0;
 }
 
-/* ================= Container ================= */
+/* ========== Container ========== */
 .cards {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 10px;
+  flex-direction: column; /* เรียงลงมาแบบการ์ดต่อการ์ด */
+  gap: 20px;
+  padding: 20px;
 }
 
+/* ========== Card Section ========== */
 .data-section {
   background: #fff;
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 15px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow-x: auto; /* เลื่อนแนวนอนเมื่อ table กว้าง */
 }
 
 .data-section h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.95rem;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+  font-size: 18px;
+  margin-bottom: 10px;
 }
 
 .data-section button {
-  padding: 4px 8px;
+  padding: 4px 10px;
   border: none;
   background: #3498db;
   color: #fff;
   border-radius: 6px;
   cursor: pointer;
-  margin-top: 5px;
-  font-size: 0.75rem;
 }
 
 .data-section button:hover {
   background: #2980b9;
 }
 
-/* ================= Table ================= */
+/* ========== Table ========== */
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 8px 0;
-  font-size: 0.8rem;
+  margin: 10px 0;
+  font-size: 14px;
   text-align: left;
-  min-width: 350px; /* ลดขนาดขั้นต่ำ */
 }
 
 .data-table th,
 .data-table td {
   border: 1px solid #ddd;
-  padding: 5px 6px;
-  word-break: break-word;
-  box-sizing: border-box;
+  padding: 6px 8px;
 }
 
 .data-table th {
   background-color: #f4f4f4;
   font-weight: bold;
   text-align: center;
-  font-size: 0.75rem;
 }
 
-/* ปรับคอลัมน์ td ให้ wrap ข้อความได้ */
+/* ปรับคอลัมน์ td ให้เหมาะกับเนื้อหา */
 .data-table td {
-  white-space: normal;
-  max-width: 150px;
-  overflow-wrap: auto;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* คอลัมน์ “จัดการ” */
+/* ปรับคอลัมน์ “จัดการ” ให้เล็กลง */
 .data-table th:last-child,
 .data-table td:last-child {
-  width: auto;
+  width: 130px;
   text-align: center;
-  white-space: nowrap; /* ปุ่มไม่ wrap */
+  white-space: nowrap;
 }
 
 /* สีสลับแถว */
@@ -98,14 +90,14 @@ h1.title {
   background-color: #fafafa;
 }
 
-/* ================= Action Buttons ================= */
+/* ========== Action Buttons ========== */
 .data-table td button {
-  padding: 3px 5px;
+  padding: 4px 6px;
   margin: 2px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.65rem;
+  font-size: 0.85rem;
 }
 
 .data-table td button:hover {
@@ -116,7 +108,7 @@ h1.title {
 .btn-del { background: #e74c3c; color: #fff; }
 .btn-pdf { background: #f39c12; color: #fff; }
 
-/* ================= Modal ================= */
+/* ========== Modal ========== */
 .modal {
   display: none;
   position: fixed;
@@ -133,43 +125,39 @@ h1.title {
 
 .modal-content {
   background: #fff;
-  padding: 15px;
-  border-radius: 10px;
+  padding: 20px;
+  border-radius: 12px;
   max-height: 90vh;
   overflow-y: auto;
-  width: 90%;
-  max-width: 450px;
+  min-width: 350px;
 }
 
 .modal-content form label {
   display: block;
-  margin: 6px 0 4px 0;
-  font-size: 0.8rem;
+  margin: 8px 0;
 }
 
 .modal-content form input,
 .modal-content form textarea,
 .modal-content form select {
   width: 100%;
-  padding: 5px;
-  margin-bottom: 6px;
+  padding: 6px;
+  margin-top: 4px;
   box-sizing: border-box;
-  font-size: 0.8rem;
 }
 
 .modal-content form button {
-  margin: 4px 2px;
-  padding: 5px 10px;
+  margin: 5px 2px;
+  padding: 6px 12px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.75rem;
 }
 
 .modal-content form button[type="submit"] { background: #27ae60; color: #fff; }
 .modal-content form button[type="button"] { background: #e74c3c; color: #fff; }
 
-/* ================= Signature Popup ================= */
+/* ========== Signature Popup ========== */
 canvas {
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -183,63 +171,42 @@ canvas {
 }
 
 .signature-popup button {
-  padding: 3px 6px;
-  margin: 0 3px;
+  padding: 4px 10px;
+  margin: 0 4px;
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  font-size: 0.75rem;
 }
 
 .signature-popup button:hover {
   opacity: 0.8;
 }
 
-/* ================= Image Preview ================= */
+/* ========== Image Preview ========== */
 .preview {
-  max-width: 70px;
-  max-height: 40px;
+  align-items: center;
+  max-width: 80px;
+  max-height: 50px;
   display: block;
   margin-top: 4px;
   border-radius: 4px;
   border: 1px solid #ccc;
 }
 
-/* ================= Change Page Button ================= */
+/* สไตล์สำหรับปุ่ม 'ใบเสนอราคา' (Change Page Button) */
 .change-page-btn {
-  display: block;
-  padding: 8px 14px;
+  display: inline-block; /* ทำให้สามารถกำหนดขนาดและระยะห่างได้ */
+  padding: 12px 25px; /* ระยะห่างภายในปุ่ม */
   border-radius: 8px;
-  background: #3d3bcf;
-  color: #fff;
-  text-decoration: none;
+  background: #3d3bcf; /* สีพื้นหลังของปุ่ม */
+  color: #fff; /* สีข้อความ */
+  text-decoration: none; /* ลบเส้นใต้จากลิงก์ */
   font-weight: 600;
-  box-shadow: 0 3px 3px rgba(0,0,0,0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 15px auto;
-  max-width: 90px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-  font-size: 0.75rem;
-}
-
-/* ================= Responsive ================= */
-@media screen and (max-width: 768px) {
-  h1.title { font-size: 1.2rem; }
-  .data-section h3 { font-size: 0.9rem; flex-direction: column; align-items: flex-start; }
-  .data-section button { font-size: 0.7rem; padding: 3px 6px; }
-  .data-table { font-size: 0.7rem; min-width: 300px; }
-  .data-table td button { font-size: 0.6rem; padding: 2px 4px; }
-  .change-page-btn { font-size: 0.7rem; padding: 6px 12px; }
-}
-
-@media screen and (max-width: 480px) {
-  h1.title { font-size: 1rem; }
-  .data-section h3 { font-size: 0.85rem; }
-  .data-section { padding: 8px; }
-  .data-table { font-size: 0.65rem; min-width: 250px; }
-  .data-table td, .data-table th { padding: 2px 3px; }
-  .data-table td button { font-size: 0.55rem; padding: 2px 3px; }
-  .change-page-btn { font-size: 0.65rem; padding: 5px 10px; max-width: 80px; }
+  box-shadow: 0 4px 4px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติ */
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* เพิ่ม transition สำหรับ hover effect */
+  margin: 20px; /* จัดให้อยู่ตรงกลาง */
+  display: block;
+  max-width: 95px; /* จำกัดความกว้างของปุ่ม */
+  position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
+  z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
 }
