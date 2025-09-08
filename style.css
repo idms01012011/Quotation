@@ -194,18 +194,18 @@ canvas {
 
 /* สไตล์สำหรับปุ่ม 'ใบเสนอราคา' (Change Page Button) */
 .change-page-btn {
-display: inline-block; /* ทำให้สามารถกำหนดขนาดและระยะห่างได้ */
-padding: 12px 25px; /* ระยะห่างภายในปุ่ม */
-border-radius: 8px;
-background: #3d3bcf; /* สีพื้นหลังของปุ่ม */
-color: #fff; / สีข้อความ /
-text-decoration: none; /* ลบเส้นใต้จากลิงก์ */
-font-weight: 600;
-box-shadow: 0 4px 4px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติ */
-transition: transform 0.2s ease, box-shadow 0.2s ease; /* เพิ่ม transition สำหรับ hover effect */
-margin: 20px; /* จัดให้อยู่ตรงกลาง */
-display: block;
-max-width: 95px; /* จำกัดความกว้างของปุ่ม */
-position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
-z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
+  display: inline-block; /* ทำให้สามารถกำหนดขนาดและระยะห่างได้ */
+  padding: 12px 25px; /* ระยะห่างภายในปุ่ม */
+  border-radius: 8px;
+  background: #3d3bcf; /* สีพื้นหลังของปุ่ม */
+  color: #fff; /* สีข้อความ */
+  text-decoration: none; /* ลบเส้นใต้จากลิงก์ */
+  font-weight: 600;
+  box-shadow: 0 4px 4px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติ */
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* เพิ่ม transition สำหรับ hover effect */
+  margin: 20px; /* จัดให้อยู่ตรงกลาง */
+  display: block;
+  max-width: 95px; /* จำกัดความกว้างของปุ่ม */
+  position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
+  z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
 }
