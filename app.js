@@ -852,8 +852,19 @@ function generatePDF(row) {
 
 function previewPDF(row) {
     const doc = generatePDF(row);
-    window.open(doc.output('bloburl'), '_blank');
+    
+    // ตรวจสอบว่าเป็นอุปกรณ์มือถือหรือไม่
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        // สำหรับมือถือ: ให้ดาวน์โหลดไฟล์โดยตรง
+        doc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
+    } else {
+        // สำหรับเดสก์ท็อป: เปิดในหน้าต่างใหม่เพื่อดูตัวอย่าง
+        window.open(doc.output('bloburl'), '_blank');
+    }
 }
+
 
 function downloadPDF(row) {
     const doc = generatePDF(row);
