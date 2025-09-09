@@ -386,7 +386,7 @@ function generateNextWorkNo() {
     }).filter(num => !isNaN(num) && num > 0);
     
     const maxNo = workNos.length > 0 ? Math.max(...workNos) : 0;
-    return "SR" + String(maxNo + 1).padStart(3, '0');
+    return "IDMS" + String(maxNo + 1).padStart(3, '0');
 }
 
 function generateNextSequence(sheet) {
