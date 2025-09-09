@@ -219,7 +219,7 @@ function renderTable(sheet, data) {
             const btnPdf = document.createElement("button");
             btnPdf.textContent = "PDF";
             btnPdf.className = "btn-pdf";
-            btnPdf.onclick = () => generatePDF(row);
+            btnPdf.onclick = () => previewPDF(row);
             tdAct.appendChild(btnPdf);
         }
         
@@ -461,9 +461,11 @@ function openSection(sheet, mode = "add", rowData = null) {
         label.textContent = f;
         let input;
         
-        if (f.includes("อาการ") || f.includes("หมายเหตุ")) {
-            input = document.createElement("textarea");
-        } else if (f.includes("รูปภาพ")) {
+        const textAreas = ["อาการที่แจ้งเสีย", "ผลการซ่อม", "หมายเหตุ"];
+
+        if (textAreas.some(keyword => f.includes(keyword))) {
+        input = document.createElement("textarea");
+        }         else if (f.includes("รูปภาพ")) {
             input = document.createElement("input");
             input.type = "file";
             input.accept = "image/*";
@@ -737,6 +739,7 @@ async function deleteRow(id, sheet) {
 function generatePDF(row) {
     const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     const doc = new jsPDFLib();
+    const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
     doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
     doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
     doc.setFont("THSarabunNew");
@@ -774,15 +777,75 @@ function generatePDF(row) {
     printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
     printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
 
-    doc.text(`อาการที่แจ้งเสีย: ${row["อาการที่แจ้งเสีย"] || ''}`, 20, y);
+    doc.setFont("THSarabunNew", "bold");
+    doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
+
+    doc.setFont("THSarabunNew", "normal");
+    doc.text(safeText(row["อุปกรณ์ที่ส่งมาด้วย"]), 60, y);
+
     y += 10;
-    doc.text(`ผลการซ่อม: ${row["ผลการซ่อม"] || ''}`, 20, y);
+
+    doc.setFont("THSarabunNew", "bold");
+    doc.text("อาการที่แจ้งเสีย:", 20, y);
+    y += 8;
+    doc.setFont("THSarabunNew", "normal");
+    doc.text(safeText(row["อาการที่แจ้งเสีย"]), 35, y);
+
+    y += 25;
+
+    doc.setFont("THSarabunNew", "bold");
+    doc.text("ผลการซ่อม:", 20, y);
+    y += 8;
+    doc.setFont("THSarabunNew", "normal");
+    doc.text(safeText(row["ผลการซ่อม"]), 35, y);
+
+    y += 25;
+
+    doc.setFont("THSarabunNew", "bold");
+    doc.text("รับประกัน:", 20, y);
+
+    doc.setFont("THSarabunNew", "normal");
+    doc.text(safeText(row["รับประกัน"]), 45, y);
+
     y += 10;
-    doc.text(`รับประกัน: ${row["รับประกัน"] || ''}`, 20, y);
-    y += 10;
+
+
 
     if (row["รูปภาพ1"]) doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
     if (row["รูปภาพ2"]) doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
+
+    y += 55;
+
+  // ฟังก์ชันช่วยแปลงค่าเป็น string ปลอดภัย
+
+    doc.setFont("THSarabunNew", "bold");
+    doc.text("IDMS", 50, y, { align: "center" });
+
+    doc.text("Customer", 150, y, { align: "center" });
+
+    doc.setFont("THSarabunNew", "normal");
+    y += 6;
+
+    // ลายเซ็น
+
+    if (row["ลายเซ็นช่าง"]) doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
+    if (row["ลายเซ็นลูกค้า"]) doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
+
+    y += 35;
+
+    // ข้อมูลช่าง/ลูกค้า
+    const companyName = row["ชื่อช่าง"] || "";
+    const companyPhone = row["เบอร์ช่าง"] || "";
+    const customerName = row["ชื่อลูกค้า"] || "";
+    const customerPhone = row["เบอร์ลูกค้า"] || "";
+
+    doc.text(`ชื่อ ${safeText(companyName)}`, 50, y, { align: "center" });
+    doc.text(`ชื่อ ${safeText(customerName)}`, 150, y, { align: "center" });
+
+    y += 6;
+
+    doc.text(`เบอร์โทรศัพท์ ${safeText(companyPhone)}`, 50, y, { align: "center" });
+    doc.text(`เบอร์โทรศัพท์ ${safeText(customerPhone)}`, 150, y, { align: "center" });
 
     return doc;
 }
