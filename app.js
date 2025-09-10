@@ -272,7 +272,7 @@ function renderFullTable(sheet, data) {
 function renderFullTableContent(sheet, data) {
     const table = document.getElementById("full-table-" + sheet);
     if (!table) return;
-    
+
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
     tbody.innerHTML = "";
@@ -284,6 +284,7 @@ function renderFullTableContent(sheet, data) {
         const tr = document.createElement("tr");
         cols.forEach(c => {
             const td = document.createElement("td");
+            td.setAttribute('data-label', c); // <<----- เพิ่มตรงนี้
             if (c.includes("รูปภาพ") && row[c]) {
                 const img = createImageElement(row[c]);
                 td.appendChild(img);
@@ -295,8 +296,9 @@ function renderFullTableContent(sheet, data) {
             }
             tr.appendChild(td);
         });
-        
+
         const tdAct = document.createElement("td");
+        tdAct.setAttribute('data-label', 'จัดการ'); // <<----- เพิ่มตรงนี้
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "แก้ไข";
         btnEdit.className = "btn-edit";
@@ -304,7 +306,7 @@ function renderFullTableContent(sheet, data) {
             document.querySelector('.modal').remove();
             openSection(sheet, "edit", row);
         };
-        
+
         const btnDel = document.createElement("button");
         btnDel.textContent = "ลบ";
         btnDel.className = "btn-del";
@@ -312,7 +314,7 @@ function renderFullTableContent(sheet, data) {
             document.querySelector('.modal').remove();
             deleteRow(row.id, sheet);
         };
-        
+
         tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
 
@@ -323,7 +325,7 @@ function renderFullTableContent(sheet, data) {
             btnPdf.onclick = () => downloadPDF(row);
             tdAct.appendChild(btnPdf);
         }
-        
+
         tr.appendChild(tdAct);
         tbody.appendChild(tr);
     });
