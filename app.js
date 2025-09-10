@@ -320,7 +320,7 @@ function renderFullTableContent(sheet, data) {
             const btnPdf = document.createElement("button");
             btnPdf.textContent = "PDF";
             btnPdf.className = "btn-pdf";
-            btnPdf.onclick = () => previewPDF(row);
+            btnPdf.onclick = () => downloadPDF(row);
             tdAct.appendChild(btnPdf);
         }
         
