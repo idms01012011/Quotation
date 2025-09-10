@@ -1,279 +1,321 @@
-/* ========== General ========== */
-body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #f5f6fa;
-  margin: 0;
-  padding: 0;
+/* ===== Reset & Base ===== */
+* {
+  box-sizing: border-box;
 }
-
+body {
+  font-family: 'Segoe UI', 'Prompt', 'Tahoma', Geneva, Verdana, sans-serif;
+  background: #f4f7fa;
+  margin: 0;
+  color: #222;
+  min-height: 100vh;
+}
 h1.title {
   text-align: center;
-  margin: 20px 0;
+  margin: 30px 0 20px 0;
+  letter-spacing: 1px;
+  color: #334e68;
 }
 
-/* ========== Container ========== */
-.cards {
+/* ===== Container & Card Layout ===== */
+.cards, #tables-container {
   display: flex;
-  flex-direction: column; /* เรียงลงมาแบบการ์ดต่อการ์ด */
-  gap: 20px;
-  padding: 20px;
+  flex-wrap: wrap;
+  gap: 32px;
+  padding: 0 5vw 40px 5vw;
+  justify-content: center;
 }
-
-/* ========== Card Section ========== */
 .data-section {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    width: 100%;
-    height: 100%;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    margin-bottom: 24px;
-    padding: 18px 16px;
-    box-sizing: border-box;
-    /* กำหนดความสูงให้เท่ากัน */
-    flex: 1 1 0;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(52, 78, 104, 0.08);
+  padding: 30px 24px 20px 24px;
+  min-width: 320px;
+  max-width: 430px;
+  flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+  transition: box-shadow 0.2s;
 }
-
-.data-table {
-    width: 100%;
-    min-width: 600px; /* ปรับขนาดตามข้อมูล */
-    border-collapse: collapse;
-}
-
-.data-section {
-    overflow-x: auto; /* เพิ่มเพื่อให้ scroll ได้ถ้าตารางเกินการ์ด */
-}
-
-/* ถ้าใช้ grid หรือ flex container ให้กำหนดความสูงให้เท่ากัน */
-#tables-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-.data-section {
-    flex: 1 1 350px; /* การ์ดแต่ละอันจะกว้างอย่างน้อย 350px และยืดได้ */
-    max-width: 100%;
-}
-
 .data-section h3 {
+  font-size: 1.16rem;
+  font-weight: 600;
+  margin: 0 0 14px 0;
+  color: #4f6272;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 18px;
-  margin-bottom: 10px;
 }
-
-.data-section button {
-  padding: 4px 10px;
-  border: none;
-  background: #3498db;
+.data-section button,
+.change-page-btn,
+.btn-save {
+  background: linear-gradient(90deg, #5863f8 60%, #3db2ff 100%);
   color: #fff;
-  border-radius: 6px;
+  border: none;
+  border-radius: 7px;
+  padding: 7px 17px;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 6px rgba(88,99,248,0.10);
+}
+.data-section button:hover,
+.change-page-btn:hover,
+.btn-save:hover {
+  background: linear-gradient(90deg, #3db2ff 30%, #5863f8 100%);
 }
 
-.data-section button:hover {
-  background: #2980b9;
+.change-page-btn {
+  display: block;
+  margin: 0 auto 24px auto;
+  max-width: 170px;
+  text-align: center;
+  letter-spacing: 0.5px;
 }
 
-/* ========== Table ========== */
+/* ===== Table Style ===== */
 .data-table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 10px 0;
-  font-size: 14px;
-  text-align: left;
-}
-
-.data-table th,
-.data-table td {
-  border: 1px solid #ddd;
-  padding: 6px 8px;
-}
-
-.data-table th {
-  background-color: #f4f4f4;
-  font-weight: bold;
-  text-align: center;
-}
-
-/* ปรับคอลัมน์ td ให้เหมาะกับเนื้อหา */
-.data-table td {
-  max-width: 180px;
-  white-space: nowrap;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 6px;
+  background: #fafdff;
+  border-radius: 12px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 0.97rem;
 }
-
-/* ปรับคอลัมน์ “จัดการ” ให้เล็กลง */
-.data-table th:last-child,
-.data-table td:last-child {
-  width: 130px;
+.data-table th, .data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e9eef3;
+}
+.data-table th {
+  background: #e2e8f6;
+  color: #334e68;
+  font-weight: 600;
   text-align: center;
-  white-space: nowrap;
 }
-
-/* สีสลับแถว */
-.data-table tr:nth-child(even) {
-  background-color: #fafafa;
+.data-table td {
+  background: #fafdff;
 }
-
-/* ========== Action Buttons ========== */
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+.data-table tr:nth-child(even) td {
+  background: #f3f8fc;
+}
 .data-table td button {
-  padding: 4px 6px;
-  margin: 2px;
+  margin: 0 3px;
+  padding: 4px 11px;
+  font-size: 0.93rem;
+  border-radius: 5px;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
+  transition: opacity 0.15s;
 }
-
 .data-table td button:hover {
   opacity: 0.8;
 }
+/* Action Button Colors */
+.btn-edit { background: #38b000; color: #fff; }
+.btn-del { background: #e63946; color: #fff; }
+.btn-pdf { background: #fcb900; color: #fff; }
+.btn-edit:hover { background: #267400; }
+.btn-del:hover { background: #b22532; }
+.btn-pdf:hover { background: #c29400; }
 
-.btn-edit { background: #27ae60; color: #fff; }
-.btn-del { background: #e74c3c; color: #fff; }
-.btn-pdf { background: #f39c12; color: #fff; }
+/* Make last column (actions) smaller */
+.data-table th:last-child,
+.data-table td:last-child {
+  width: 120px;
+  text-align: center;
+}
 
-/* ========== Modal ========== */
+/* =========== Image Preview =========== */
+img.preview, .signature-preview {
+  display: block;
+  max-width: 80px;
+  max-height: 60px;
+  border-radius: 6px;
+  margin: 6px auto 0 auto;
+  border: 1px solid #e2e8f6;
+  box-shadow: 0 1px 5px rgba(52,78,104,0.07);
+  object-fit: cover;
+  background: #fff;
+}
+.signature-preview {
+  max-width: 140px;
+  max-height: 60px;
+  border: 2px solid #5863f8;
+  margin-top: 10px;
+}
+
+/* =========== Modal Style =========== */
 .modal {
   display: none;
   position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
+  z-index: 1200;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(52,78,104,0.19);
   justify-content: center;
   align-items: center;
-  z-index: 1000;
 }
-
 .modal.show {
   display: flex;
 }
-
 .modal-content {
   background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  max-height: 90vh;
+  border-radius: 13px;
+  padding: 28px 26px 20px 26px;
+  min-width: 320px;
+  max-width: 98vw;
+  max-height: 92vh;
   overflow-y: auto;
-  min-width: 350px;
+  box-shadow: 0 4px 20px rgba(52,78,104,0.22);
+  position: relative;
 }
-
 .modal-content form label {
   display: block;
-  margin: 8px 0;
+  margin: 13px 0 7px 0;
+  font-weight: 500;
+  color: #334e68;
 }
-
 .modal-content form input,
 .modal-content form textarea,
 .modal-content form select {
   width: 100%;
-  padding: 6px;
-  margin-top: 4px;
-  box-sizing: border-box;
+  padding: 8px 11px;
+  border: 1px solid #dde3ea;
+  border-radius: 5px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  font-size: 1rem;
+  transition: border-color 0.18s;
+  background: #fafdff;
+}
+.modal-content form input:focus,
+.modal-content form textarea:focus,
+.modal-content form select:focus {
+  border-color: #5863f8;
+  outline: none;
+}
+.modal-content form textarea {
+  min-height: 65px;
+  resize: vertical;
+}
+.modal-content form button[type="submit"] {
+  margin-top: 15px;
+  font-weight: 600;
+}
+.modal-content form button[type="button"] {
+  background: #c9ccd8;
+  color: #444;
+  margin-left: 8px;
+}
+.modal-content form button[type="button"]:hover {
+  background: #8a90a3;
+  color: #fff;
 }
 
-.modal-content form button {
-  margin: 5px 2px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+/* ===== Signature Popup ===== */
+#signature-popup .modal-content,
+.signature-popup .modal-content {
+  padding: 24px 20px 16px 20px;
 }
-
-.modal-content form button[type="submit"] { background: #27ae60; color: #fff; }
-.modal-content form button[type="button"] { background: #e74c3c; color: #fff; }
-
-/* ========== Signature Popup ========== */
-canvas {
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #fff;
+#signature-pad {
   display: block;
-  margin: 10px auto;
+  margin: 10px auto 0 auto;
+  border: 2px solid #5863f8;
+  border-radius: 7px;
+  background: #fff;
+  max-width: 95vw;
 }
-
-.signature-popup .actions {
+.signature-buttons {
+  margin-top: 14px;
   text-align: center;
 }
-
-.signature-popup button {
-  padding: 4px 10px;
-  margin: 0 4px;
-  border-radius: 6px;
+.signature-buttons button {
+  padding: 7px 23px;
+  border-radius: 5px;
   border: none;
+  margin: 0 8px;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
 }
+.signature-buttons .clear-btn { background: #e63946; color: #fff; }
+.signature-buttons .save-sig-btn { background: #38b000; color: #fff; }
+.signature-buttons .cancel-sig-btn { background: #c9ccd8; color: #444; }
+.signature-buttons .clear-btn:hover { background: #b22532; }
+.signature-buttons .save-sig-btn:hover { background: #267400; }
+.signature-buttons .cancel-sig-btn:hover { background: #8a90a3; color: #fff; }
 
-.signature-popup button:hover {
-  opacity: 0.8;
+/* ===== Notification ===== */
+.notification {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  background: #5863f8;
+  color: #fff;
+  padding: 13px 24px;
+  border-radius: 7px;
+  box-shadow: 0 4px 12px rgba(88,99,248,0.13);
+  font-weight: 500;
+  font-size: 1.05rem;
+  z-index: 3000;
+  opacity: 0;
+  transform: translateX(80px);
+  transition: opacity 0.3s, transform 0.3s;
+  max-width: 350px;
+  word-break: break-word;
+  white-space: pre-line;
+}
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.notification.success { background: #38b000; }
+.notification.error { background: #e63946; }
+.notification.warning { background: #fcb900; color: #444; }
+.notification.info { background: #5863f8; }
+
+/* ===== Loader ===== */
+.loader {
+  display: none;
+  position: fixed;
+  z-index: 2500;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.loader-spinner {
+  width: 64px;
+  height: 64px;
+  border: 7px solid #e2e8f6;
+  border-top: 7px solid #5863f8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
 }
 
-/* ========== Image Preview ========== */
-.preview {
-  align-items: center;
-  max-width: 80px;
-  max-height: 50px;
-  display: block;
-  margin-top: 4px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+/* ===== Responsive ===== */
+@media (max-width: 1000px) {
+  .cards, #tables-container { padding: 0 2vw 30px 2vw; gap: 18px;}
+  .data-section { min-width: 220px; max-width: 98vw; }
 }
-
-/* สไตล์สำหรับปุ่ม 'ใบเสนอราคา' (Change Page Button) */
-.change-page-btn {
-  display: inline-block; /* ทำให้สามารถกำหนดขนาดและระยะห่างได้ */
-  padding: 12px 25px; /* ระยะห่างภายในปุ่ม */
-  border-radius: 8px;
-  background: #3d3bcf; /* สีพื้นหลังของปุ่ม */
-  color: #fff; /* สีข้อความ */
-  text-decoration: none; /* ลบเส้นใต้จากลิงก์ */
-  font-weight: 600;
-  box-shadow: 0 4px 4px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติ */
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* เพิ่ม transition สำหรับ hover effect */
-  margin: 20px; /* จัดให้อยู่ตรงกลาง */
-  display: block;
-  max-width: 95px; /* จำกัดความกว้างของปุ่ม */
-  position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
-  z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
-}
-
-/* ========== Responsive Table for Mobile ========== */
 @media (max-width: 700px) {
-  .data-table,
-  .data-table thead,
-  .data-table tbody,
-  .data-table th,
-  .data-table td,
-  .data-table tr {
-    display: block;
-    width: 100%;
-  }
-  .data-table th {
-    text-align: left;
-    padding-top: 10px;
-  }
-  .data-table td {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
-    max-width: 100%;
-    padding-left: 50%;
-    position: relative;
-  }
-  .data-table td:before {
-    position: absolute;
-    left: 10px;
-    top: 6px;
-    white-space: nowrap;
-    font-weight: bold;
-    content: attr(data-label);
-  }
-  .data-section, #tables-container {
-    padding: 5px;
-  }
+  .cards, #tables-container { flex-direction: column; gap: 18px; padding: 0 2vw 20px 2vw;}
+  .data-section { min-width: 0; max-width: 100vw; padding: 15px 6px 12px 6px;}
+  .modal-content { min-width: 0; max-width: 98vw; padding: 13px 5vw 13px 5vw;}
+  h1.title { font-size: 1.2rem; }
+  .change-page-btn { max-width: 98vw; }
+  .data-table th, .data-table td { padding: 6px 5px; font-size: 0.95rem;}
+  .data-table th { font-size: 1rem;}
 }
+
+/* ===== Custom Scrollbar (optional) ===== */
+::-webkit-scrollbar { width: 9px; background: #e9eef3;}
+::-webkit-scrollbar-thumb { background: #bfcde0; border-radius: 6px;}
+::-webkit-scrollbar-thumb:hover { background: #5863f8;}
