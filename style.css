@@ -241,3 +241,39 @@ canvas {
   position: relative; /* สำคัญ: ต้องกำหนด position เพื่อให้ pseudo-element ทำงานได้ */
   z-index: 1; /* ทำให้ปุ่มอยู่เหนือเลเยอร์เงา */
 }
+
+/* ========== Responsive Table for Mobile ========== */
+@media (max-width: 700px) {
+  .data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table th,
+  .data-table td,
+  .data-table tr {
+    display: block;
+    width: 100%;
+  }
+  .data-table th {
+    text-align: left;
+    padding-top: 10px;
+  }
+  .data-table td {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: 100%;
+    padding-left: 50%;
+    position: relative;
+  }
+  .data-table td:before {
+    position: absolute;
+    left: 10px;
+    top: 6px;
+    white-space: nowrap;
+    font-weight: bold;
+    content: attr(data-label);
+  }
+  .data-section, #tables-container {
+    padding: 5px;
+  }
+}
