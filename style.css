@@ -21,10 +21,41 @@ h1.title {
 
 /* ========== Card Section ========== */
 .data-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+    padding: 18px 16px;
+    box-sizing: border-box;
+    /* กำหนดความสูงให้เท่ากัน */
+    flex: 1 1 0;
+}
+
+.data-table {
+    width: 100%;
+    min-width: 600px; /* ปรับขนาดตามข้อมูล */
+    border-collapse: collapse;
+}
+
+.data-section {
+    overflow-x: auto; /* เพิ่มเพื่อให้ scroll ได้ถ้าตารางเกินการ์ด */
+}
+
+/* ถ้าใช้ grid หรือ flex container ให้กำหนดความสูงให้เท่ากัน */
+#tables-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.data-section {
+    flex: 1 1 350px; /* การ์ดแต่ละอันจะกว้างอย่างน้อย 350px และยืดได้ */
+    max-width: 100%;
 }
 
 .data-section h3 {
