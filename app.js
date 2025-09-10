@@ -189,6 +189,7 @@ function renderTable(sheet, data) {
         const tr = document.createElement("tr");
         cols.forEach(c => {
             const td = document.createElement("td");
+            td.setAttribute('data-label', c); // <<----- เพิ่มตรงนี้
             if (c.includes("รูปภาพ") && row[c]) {
                 const img = createImageElement(row[c]);
                 td.appendChild(img);
@@ -200,18 +201,19 @@ function renderTable(sheet, data) {
             }
             tr.appendChild(td);
         });
-        
+
         const tdAct = document.createElement("td");
+        tdAct.setAttribute('data-label', 'จัดการ'); // <<----- เพิ่มตรงนี้
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "แก้ไข";
         btnEdit.className = "btn-edit";
         btnEdit.onclick = () => openSection(sheet, "edit", row);
-        
+
         const btnDel = document.createElement("button");
         btnDel.textContent = "ลบ";
         btnDel.className = "btn-del";
         btnDel.onclick = () => deleteRow(row.id, sheet);
-        
+
         tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
 
@@ -222,7 +224,7 @@ function renderTable(sheet, data) {
             btnPdf.onclick = () => previewPDF(row);
             tdAct.appendChild(btnPdf);
         }
-        
+
         tr.appendChild(tdAct);
         tbody.appendChild(tr);
     });
@@ -235,10 +237,72 @@ function renderTable(sheet, data) {
         td.style.fontStyle = "italic";
         td.style.color = "#666";
         td.style.padding = "10px";
-        td.innerHTML = `แสดง 5 จาก ${data.length} รายการ <button onclick="showAllData('${sheet}')" style="margin-left: 10px; padding: 4px 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">ดูทั้งหมด</button>`;
+        td.innerHTML = `แสดง 5 จาก ${data.length} รายการ <button onclick="showAllData('${sheet}')" style="margin-left: 10px; padding: 4px 8px; background: #3498db; color: #fff; border-radius: 4px;">แสดงทั้งหมด</button>`;
         tr.appendChild(td);
         tbody.appendChild(tr);
     }
+}
+
+function renderFullTableContent(sheet, data) {
+    const table = document.getElementById("full-table-" + sheet);
+    if (!table) return;
+
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = "";
+
+    const cols = displayColumns[sheet] || schemas[sheet].filter(c => c !== 'id');
+    thead.innerHTML = "<tr>" + cols.map(c => `<th>${c}</th>`).join("") + "<th>จัดการ</th></tr>";
+
+    data.forEach(row => {
+        const tr = document.createElement("tr");
+        cols.forEach(c => {
+            const td = document.createElement("td");
+            td.setAttribute('data-label', c); // <<----- เพิ่มตรงนี้
+            if (c.includes("รูปภาพ") && row[c]) {
+                const img = createImageElement(row[c]);
+                td.appendChild(img);
+            } else if (c.includes("ลายเซ็น") && row[c]) {
+                const img = createImageElement(row[c], true);
+                td.appendChild(img);
+            } else {
+                td.textContent = row[c] || "";
+            }
+            tr.appendChild(td);
+        });
+
+        const tdAct = document.createElement("td");
+        tdAct.setAttribute('data-label', 'จัดการ'); // <<----- เพิ่มตรงนี้
+        const btnEdit = document.createElement("button");
+        btnEdit.textContent = "แก้ไข";
+        btnEdit.className = "btn-edit";
+        btnEdit.onclick = () => {
+            document.querySelector('.modal').remove();
+            openSection(sheet, "edit", row);
+        };
+
+        const btnDel = document.createElement("button");
+        btnDel.textContent = "ลบ";
+        btnDel.className = "btn-del";
+        btnDel.onclick = () => {
+            document.querySelector('.modal').remove();
+            deleteRow(row.id, sheet);
+        };
+
+        tdAct.appendChild(btnEdit);
+        tdAct.appendChild(btnDel);
+
+        if (sheet === "service") {
+            const btnPdf = document.createElement("button");
+            btnPdf.textContent = "PDF";
+            btnPdf.className = "btn-pdf";
+            btnPdf.onclick = () => downloadPDF(row);
+            tdAct.appendChild(btnPdf);
+        }
+
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+    });
 }
 
 function showAllData(sheet) {
