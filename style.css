@@ -20,6 +20,7 @@ h1.title {
 
 /* ===== Container & Card Layout ===== */
 .cards, #tables-container {
+  width : 100%
   display: flex;
   flex-wrap: wrap;
   gap: 32px;
