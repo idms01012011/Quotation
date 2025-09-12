@@ -1,4 +1,4 @@
-const scriptURL = "https://script.google.com/macros/s/AKfycbw-fyaoWmItvaWTrn6pdz23hWxXcuBJ2nyKhdo7_NK5jyBz6pEUpOHQ3ugRBhWLtDTudw/exec";
+const scriptURL = "https://script.google.com/macros/s/AKfycbyyng6vNNQAdV87I3MDBXJu7nAqDqne9j-tAF9AU0sn4bpsb8mkRLNiWEQ-cIAcqtBDpQ/exec";
 
 // ✅ FIX: เพิ่ม "id" เป็นฟิลด์แรกในทุก schema และเพิ่มฟิลด์รูปภาพ
 const schemas = {
@@ -736,6 +736,8 @@ async function deleteRow(id, sheet) {
 }
 
 // ===== PDF =====
+let lastDoc = null; // เก็บ PDF ล่าสุดที่ Preview แล้ว
+
 function generatePDF(row) {
     const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     const doc = new jsPDFLib();
@@ -809,25 +811,19 @@ function generatePDF(row) {
 
     y += 10;
 
-
-
     if (row["รูปภาพ1"]) doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
     if (row["รูปภาพ2"]) doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
 
     y += 55;
 
-  // ฟังก์ชันช่วยแปลงค่าเป็น string ปลอดภัย
-
     doc.setFont("THSarabunNew", "bold");
     doc.text("IDMS", 50, y, { align: "center" });
-
     doc.text("Customer", 150, y, { align: "center" });
 
     doc.setFont("THSarabunNew", "normal");
     y += 6;
 
     // ลายเซ็น
-
     if (row["ลายเซ็นช่าง"]) doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
     if (row["ลายเซ็นลูกค้า"]) doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
 
@@ -850,15 +846,22 @@ function generatePDF(row) {
     return doc;
 }
 
+// ✅ Preview ก่อน
 function previewPDF(row) {
     const doc = generatePDF(row);
+    lastDoc = doc; // เก็บไว้ให้โหลดทีหลัง
     window.open(doc.output('bloburl'), '_blank');
 }
 
+// ✅ Download หลังจาก Preview
 function downloadPDF(row) {
-    const doc = generatePDF(row);
-    doc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
+    if (!lastDoc) {
+        alert("กรุณา Preview ก่อนดาวน์โหลด");
+        return;
+    }
+    lastDoc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
 }
+
 
 // ===== Fixed: Signature System =====
 let currentSignatureInput = null;
