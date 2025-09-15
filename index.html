@@ -7,8 +7,6 @@
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="thsarabun.js"></script>
-  <script src="thsarabun-bold.js"></script>
 </head>
 <body>
   <h1 class="title">ระบบจัดการข้อมูลทั้งหมด</h1>
@@ -33,13 +31,14 @@
       <h3>ลายเซ็น</h3>
       <canvas id="signature-pad" width="400" height="200"></canvas>
       <div class="signature-buttons">
-        <button type="button" class="clear-btn">ล้าง</button>
-        <button type="button" class="save-sig-btn">บันทึก</button>
+        <button type="button" class="clear-btn" onclick="clearSignature()">ล้าง</button>
+        <button type="button" class="save-sig-btn" onclick="saveSignature()">บันทึก</button>
         <button type="button" class="cancel-sig-btn" onclick="closeSignature()">ยกเลิก</button>
       </div>
     </div>
   </div>
-  <script src="logo.js"></script>
+  
+  <!-- 移除缺失的logo.js引用 -->
   <script src="app.js"></script>
 </body>
 </html>
