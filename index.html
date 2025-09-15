@@ -37,8 +37,23 @@
       </div>
     </div>
   </div>
-  
-  <!-- 移除缺失的logo.js引用 -->
+
+  <!-- ===== PDF Options Modal ===== -->
+  <div id="pdf-options-modal" class="modal">
+    <div class="modal-content" style="text-align: center; max-width: 300px;">
+      <h3>เลือกวิธีการดูรายงาน</h3>
+      <button onclick="viewHTMLPDF()" style="padding: 12px; margin: 10px; width: 100%; background: #8e44ad; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        ดูในเว็บไซต์
+      </button>
+      <button onclick="downloadPDFFile()" style="padding: 12px; margin: 10px; width: 100%; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        ดาวน์โหลด PDF
+      </button>
+      <button onclick="closePDFOptions()" style="padding: 12px; margin: 10px; width: 100%; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
