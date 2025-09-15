@@ -708,126 +708,368 @@ async function deleteRow(id, sheet) {
         showLoading(false);
     }
 }
-
-// ===== PDF Generation =====
+// ===== PDF Generation (Fixed for Mobile) =====
 let lastDoc = null;
+let currentPDFRow = null;
 
-function generatePDF(row) {
-    const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
-    const doc = new jsPDFLib();
-    const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
-    
-    // ใช้ฟอนต์มาตรฐานแทนฟอนต์ไทย
-    doc.setFont("helvetica");
-    doc.setFontSize(12);
-
-    let y = 10;
-    
-    // ตรวจสอบว่ามีโลโก้ก่อนจึงเพิ่ม
-    try {
-        if (typeof logoBase64 !== 'undefined' && logoBase64) {
-            doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
-            y += 25;
-        }
-    } catch (e) {
-        console.log('ไม่สามารถเพิ่มโลโก้ได้:', e);
-        y += 5;
-    }
-
-    doc.setFontSize(20);
-    doc.setTextColor(0, 0, 255);
-    doc.setFont(undefined, 'bold'); 
-    doc.text("Service Report", 105, y, { align: 'center' }); 
-    y += 10;
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-
-    const printLine = (label1, val1, label2, val2) => {
-        doc.setFont(undefined, 'bold');
-        doc.text(`${label1}:`, 20, y);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${val1 || ''}`, 50, y);
-
-        doc.setFont(undefined, 'bold');
-        doc.text(`${label2}:`, 120, y);
-        doc.setFont(undefined, 'normal');
-        doc.text(`${val2 || ''}`, 150, y);
-        y += 8;
-    };
-
-    printLine("เลขที่ / No", row["เลขที่ใบงาน"], "ประเภทงาน", row["ประเภทงาน"]);
-    printLine("ชื่อโรงพยาบาล", row["ชื่อโรงพยาบาล"], "วันที่", row["วันที่เปิดงาน"]);
-    printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
-    printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
-
-    doc.setFont(undefined, 'bold');
-    doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(safeText(row["อุปกรณ์ที่ส่งมาด้วย"]), 60, y);
-    y += 10;
-
-    doc.setFont(undefined, 'bold');
-    doc.text("อาการที่แจ้งเสีย:", 20, y);
-    y += 8;
-    doc.setFont(undefined, 'normal');
-    doc.text(safeText(row["อาการที่แจ้งเสีย"]), 35, y);
-    y += 25;
-
-    doc.setFont(undefined, 'bold');
-    doc.text("ผลการซ่อม:", 20, y);
-    y += 8;
-    doc.setFont(undefined, 'normal');
-    doc.text(safeText(row["ผลการซ่อม"]), 35, y);
-    y += 25;
-
-    doc.setFont(undefined, 'bold');
-    doc.text("รับประกัน:", 20, y);
-    doc.setFont(undefined, 'normal');
-    doc.text(safeText(row["รับประกัน"]), 45, y);
-    y += 10;
-
-    if (row["รูปภาพ1"]) doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
-    if (row["รูปภาพ2"]) doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
-    y += 55;
-
-    doc.setFont(undefined, 'bold');
-    doc.text("IDMS", 50, y, { align: "center" });
-    doc.text("Customer", 150, y, { align: "center" });
-    doc.setFont(undefined, 'normal');
-    y += 6;
-
-    if (row["ลายเซ็นช่าง"]) doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
-    if (row["ลายเซ็นลูกค้า"]) doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
-    y += 35;
-
-    const companyName = row["ชื่อช่าง"] || "";
-    const companyPhone = row["เบอร์ช่าง"] || "";
-    const customerName = row["ชื่อลูกค้า"] || "";
-    const customerPhone = row["เบอร์ลูกค้า"] || "";
-
-    doc.text(`ชื่อ ${safeText(companyName)}`, 50, y, { align: "center" });
-    doc.text(`ชื่อ ${safeText(customerName)}`, 150, y, { align: "center" });
-    y += 6;
-
-    doc.text(`เบอร์โทรศัพท์ ${safeText(companyPhone)}`, 50, y, { align: "center" });
-    doc.text(`เบอร์โทรศัพท์ ${safeText(customerPhone)}`, 150, y, { align: "center" });
-
-    return doc;
+// ฟังก์ชันตรวจสอบว่าเป็นมือถือหรือไม่
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+// แก้ไขฟังก์ชัน previewPDF
 function previewPDF(row) {
-    const doc = generatePDF(row);
-    lastDoc = doc;
-    window.open(doc.output('bloburl'), '_blank');
+    currentPDFRow = row;
+    
+    if (isMobileDevice()) {
+        // บนมือถือให้แสดง options
+        showPDFOptions();
+    } else {
+        // บน desktop ใช้วิธีเดิม
+        generateAndPreviewPDF(row);
+    }
 }
 
-function downloadPDF(row) {
-    if (!lastDoc) {
-        alert("กรุณา Preview ก่อนดาวน์โหลด");
-        return;
-    }
-    lastDoc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
+// แสดง options PDF
+function showPDFOptions() {
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.style.zIndex = '2000';
+    modal.innerHTML = `
+        <div class="modal-content" style="text-align: center; max-width: 300px;">
+            <h3 style="margin-bottom: 20px;">เลือกวิธีการดูรายงาน</h3>
+            <button onclick="viewHTMLPDF()" style="padding: 12px; margin: 10px; width: 100%; background: #8e44ad; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                📱 ดูในเว็บไซต์
+            </button>
+            <button onclick="downloadPDFFile()" style="padding: 12px; margin: 10px; width: 100%; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                📄 ดาวน์โหลด PDF
+            </button>
+            <button onclick="closeModal()" style="padding: 12px; margin: 10px; width: 100%; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                ❌ ยกเลิก
+            </button>
+        </div>
+    `;
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    };
+    document.body.appendChild(modal);
 }
+
+// ดู PDF ในรูปแบบ HTML
+function viewHTMLPDF() {
+    if (!currentPDFRow) return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.style.zIndex = '2000';
+    modal.style.background = 'white';
+    
+    const pdfContent = `
+        <div style="max-width: 100%; height: 100vh; overflow: auto; padding: 20px; background: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <h2 style="margin: 0; color: #2c3e50;">📋 Service Report</h2>
+                <div>
+                    <button onclick="printPDF()" style="padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">🖨️ พิมพ์</button>
+                    <button onclick="closeModal()" style="padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ ปิด</button>
+                </div>
+            </div>
+            <div id="pdf-content" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                ${createPDFHTMLContent(currentPDFRow)}
+            </div>
+        </div>
+    `;
+    
+    modal.innerHTML = pdfContent;
+    document.body.appendChild(modal);
+}
+
+// สร้างเนื้อหา HTML สำหรับ PDF
+function createPDFHTMLContent(row) {
+    const safeText = (val) => (val !== undefined && val !== null ? String(val) : '-');
+    
+    return `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+            <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #3498db;">
+                <h1 style="color: #3498db; margin-bottom: 5px; font-size: 28px;">Service Report</h1>
+                <p style="color: #7f8c8d; font-size: 16px;">เลขที่ใบงาน: ${safeText(row["เลขที่ใบงาน"])}</p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px;">
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa; width: 20%;">เลขที่ใบงาน</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; width: 30%;">${safeText(row["เลขที่ใบงาน"])}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa; width: 20%;">ประเภทงาน</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; width: 30%;">${safeText(row["ประเภทงาน"])}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">ชื่อโรงพยาบาล</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["ชื่อโรงพยาบาล"])}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">วันที่เปิดงาน</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["วันที่เปิดงาน"])}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">ชื่อเครื่อง</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["ชื่อเครื่อง"])}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">ยี่ห้อ</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["ยี่ห้อ"])}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">รุ่น</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["รุ่น"])}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; background: #f8f9fa;">หมายเลขเครื่อง</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">${safeText(row["หมายเลขเครื่อง"])}</td>
+                </tr>
+            </table>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px;">อุปกรณ์ที่ส่งมาด้วย</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #3498db;">
+                    <p style="margin: 0; color: #2c3e50;">${safeText(row["อุปกรณ์ที่ส่งมาด้วย"])}</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px;">อาการที่แจ้งเสีย</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #e74c3c;">
+                    <p style="margin: 0; color: #2c3e50;">${safeText(row["อาการที่แจ้งเสีย"])}</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px;">ผลการซ่อม</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #27ae60;">
+                    <p style="margin: 0; color: #2c3e50;">${safeText(row["ผลการซ่อม"])}</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 8px;">รับประกัน</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                    <p style="margin: 0; color: #2c3e50;">${safeText(row["รับประกัน"])}</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+                <div style="text-align: center; flex: 1; min-width: 200px;">
+                    <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 15px; padding-bottom: 10px; font-weight: bold;">ลายเซ็นช่าง</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${safeText(row["ชื่อช่าง"])}</div>
+                    <div style="color: #7f8c8d;">${safeText(row["เบอร์ช่าง"])}</div>
+                </div>
+                
+                <div style="text-align: center; flex: 1; min-width: 200px;">
+                    <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 15px; padding-bottom: 10px; font-weight: bold;">ลายเซ็นลูกค้า</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${safeText(row["名前ลูกค้า"])}</div>
+                    <div style="color: #7f8c8d;">${safeText(row["เบอร์ลูกค้า"])}</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px; border-top: 1px solid #ddd; padding-top: 15px;">
+                <p>เอกสารนี้ถูกสร้างขึ้นโดยระบบจัดการข้อมูล IDMS</p>
+                <p>วันที่สร้าง: ${new Date().toLocaleDateString('th-TH')}</p>
+            </div>
+        </div>
+    `;
+}
+
+// พิมพ์ PDF
+function printPDF() {
+    const content = document.getElementById('pdf-content');
+    const originalContent = content.innerHTML;
+    
+    const printContent = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px;">
+            ${content.innerHTML}
+        </div>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Service Report - Print</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                @media print {
+                    body { margin: 0; padding: 0; }
+                    .no-print { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            ${printContent}
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() {
+                        window.close();
+                    }, 500);
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+// ดาวน์โหลด PDF
+function downloadPDFFile() {
+    if (!currentPDFRow) return;
+    
+    try {
+        const doc = generatePDF(currentPDFRow);
+        if (!doc) return;
+        
+        const filename = `${currentPDFRow["เลขที่ใบงาน"] || 'service'}_report.pdf`;
+        doc.save(filename);
+        showNotification('กำลังดาวน์โหลด PDF...', 'success');
+        
+    } catch (error) {
+        console.error('Error in downloadPDF:', error);
+        showNotification('ไม่สามารถดาวน์โหลด PDF ได้', 'error');
+    }
+}
+
+// ปิด modal
+function closeModal() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (modal.style.zIndex === '2000') {
+            modal.remove();
+        }
+    });
+    currentPDFRow = null;
+}
+
+// แก้ไขฟังก์ชัน generatePDF ให้ดีขึ้น
+function generatePDF(row) {
+    try {
+        const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+        const doc = new jsPDFLib();
+        const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
+        
+        // ใช้ฟอนต์มาตรฐาน
+        doc.setFont("helvetica");
+        doc.setFontSize(12);
+
+        let y = 10;
+
+        doc.setFontSize(20);
+        doc.setTextColor(0, 0, 255);
+        doc.setFont(undefined, 'bold'); 
+        doc.text("Service Report", 105, y, { align: 'center' }); 
+        y += 10;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+
+        const printLine = (label1, val1, label2, val2) => {
+            doc.setFont(undefined, 'bold');
+            doc.text(`${label1}:`, 20, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(`${val1 || ''}`, 50, y);
+
+            doc.setFont(undefined, 'bold');
+            doc.text(`${label2}:`, 120, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(`${val2 || ''}`, 150, y);
+            y += 8;
+        };
+
+        printLine("เลขที่ / No", row["เลขที่ใบงาน"], "ประเภทงาน", row["ประเภทงาน"]);
+        printLine("ชื่อโรงพยาบาล", row["ชื่อโรงพยาบาล"], "วันที่", row["วันที่เปิดงาน"]);
+        printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
+        printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
+
+        doc.setFont(undefined, 'bold');
+        doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
+        doc.setFont(undefined, 'normal');
+        
+        // ใช้ splitTextToSize สำหรับข้อความยาว
+        const equipmentText = doc.splitTextToSize(safeText(row["อุปกรณ์ที่ส่งมาด้วย"] || ""), 150);
+        doc.text(equipmentText, 60, y);
+        y += equipmentText.length * 6;
+
+        doc.setFont(undefined, 'bold');
+        doc.text("อาการที่แจ้งเสีย:", 20, y);
+        y += 8;
+        doc.setFont(undefined, 'normal');
+        
+        const symptomText = doc.splitTextToSize(safeText(row["อาการที่แจ้งเสีย"] || ""), 150);
+        doc.text(symptomText, 35, y);
+        y += symptomText.length * 6 + 10;
+
+        doc.setFont(undefined, 'bold');
+        doc.text("ผลการซ่อม:", 20, y);
+        y += 8;
+        doc.setFont(undefined, 'normal');
+        
+        const resultText = doc.splitTextToSize(safeText(row["ผลการซ่อม"] || ""), 150);
+        doc.text(resultText, 35, y);
+        y += resultText.length * 6 + 10;
+
+        doc.setFont(undefined, 'bold');
+        doc.text("รับประกัน:", 20, y);
+        doc.setFont(undefined, 'normal');
+        doc.text(safeText(row["รับประกัน"] || ""), 45, y);
+        y += 10;
+
+        // รูปภาพ
+        try {
+            if (row["รูปภาพ1"]) {
+                doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
+            }
+            if (row["รูปภาพ2"]) {
+                doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
+            }
+            y += 60;
+        } catch (e) {
+            console.log('ไม่สามารถเพิ่มรูปภาพใน PDF:', e);
+            y += 20;
+        }
+
+        // ลายเซ็น
+        doc.setFont(undefined, 'bold');
+        doc.text("IDMS", 50, y, { align: "center" });
+        doc.text("Customer", 150, y, { align: "center" });
+        doc.setFont(undefined, 'normal');
+        y += 6;
+
+        try {
+            if (row["ลายเซ็นช่าง"]) {
+                doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
+            }
+            if (row["ลายเซ็นลูกค้า"]) {
+                doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
+            }
+            y += 40;
+        } catch (e) {
+            console.log('ไม่สามารถเพิ่มลายเซ็นใน PDF:', e);
+            y += 20;
+        }
+
+        // ข้อมูลติดต่อ
+        const companyName = row["ชื่อช่าง"] || "";
+        const companyPhone = row["เบอร์ช่าง"] || "";
+        const customerName = row["ชื่อลูกค้า"] || "";
+        const customerPhone = row["เบอร์ลูกค้า"] || "";
+
+        doc.text(`ชื่อ ${safeText(companyName)}`, 50, y, { align: "center" });
+        doc.text(`ชื่อ ${safeText(customerName)}`, 150, y, { align: "center" });
+        y += 6;
+
+        doc.text(`เบอร์โทร ${safeText(companyPhone)}`, 50, y, { align: "center" });
+        doc.text(`เบอร์โทร ${safeText(customerPhone)}`, 150, y, { align: "center" });
+
+        return doc;
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showNotification('เกิดข้อผิดพลาดในการสร้าง PDF', 'error');
+        return null;
+    }
+}
+
 
 // ===== Signature System =====
 let currentSignatureInput = null;
