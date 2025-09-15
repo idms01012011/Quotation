@@ -1,6 +1,6 @@
 const scriptURL = "https://script.google.com/macros/s/AKfycbyyng6vNNQAdV87I3MDBXJu7nAqDqne9j-tAF9AU0sn4bpsb8mkRLNiWEQ-cIAcqtBDpQ/exec";
 
-// ✅ FIX: เพิ่ม "id" เป็นฟิลด์แรกในทุก schema และเพิ่มฟิลด์รูปภาพ
+// ✅ Schema ข้อมูลทั้งหมด
 const schemas = {
     service: ["id", "เลขที่ใบงาน", "ลำดับ", "วันที่เปิดงาน", "วันที่ปิดงาน", "ประเภทงาน", "ชื่อโรงพยาบาล", "ชื่อเครื่อง", "ยี่ห้อ", "รุ่น",
         "หมายเลขเครื่อง", "หมายเลขครุภัณฑ์", "อุปกรณ์ที่ส่งมาด้วย", "อาการที่แจ้งเสีย", "ผลการซ่อม", "รับประกัน",
@@ -55,21 +55,30 @@ let currentSheet = "";
 let currentData = {};
 const sheetsOrder = ["service", "request", "sales", "rental", "equipment", "customers", "sparepart"];
 
+// ===== Initialize Application =====
+function initializeApp() {
+    addDynamicCSS();
+    loadAllTables();
+
+    setTimeout(() => {
+        addStatistics();
+        addSearchFilters();
+        addExportButtons();
+        enableAutoRefresh(5);
+    }, 1000);
+}
+
 // ===== Notification System =====
 function showNotification(message, type = 'info') {
-    // Remove existing notifications
     const existing = document.querySelectorAll('.notification');
     existing.forEach(el => el.remove());
-    
+
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
     document.body.appendChild(notification);
-    
-    // Show notification
+
     setTimeout(() => notification.classList.add('show'), 100);
-    
-    // Hide and remove notification
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
@@ -86,10 +95,10 @@ function showLoading(show = true) {
         loader.innerHTML = '<div class="loader-spinner"></div>';
         document.body.appendChild(loader);
     }
-    loader.style.display = show ? 'block' : 'none';
+    loader.style.display = show ? 'flex' : 'none';
 }
 
-// ===== โหลดตาราง =====
+// ===== โหลดตารางทั้งหมด =====
 function loadAllTables() {
     const container = document.getElementById("tables-container");
     container.innerHTML = "";
@@ -105,17 +114,17 @@ function loadAllTables() {
     });
 }
 
-// ===== โหลดข้อมูลจาก GAS =====
+// ===== โหลดข้อมูลจาก Google Apps Script =====
 async function loadSheetData(sheet) {
     try {
         showLoading(true);
         const res = await fetch(scriptURL + "?sheet=" + sheet);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
+
         const json = await res.json();
         currentData[sheet] = json.data || [];
         renderTable(sheet, currentData[sheet]);
-        
+
     } catch (error) {
         console.error(`Error loading ${sheet}:`, error);
         currentData[sheet] = [];
@@ -126,55 +135,41 @@ async function loadSheetData(sheet) {
     }
 }
 
-// ===== แสดงตาราง =====
-// ✅ แก้ไขฟังก์ชัน createImageElement ให้เรียบง่ายลง
+// ===== แสดงตารางข้อมูล =====
 function createImageElement(src, isSignature = false) {
     const img = document.createElement("img");
     img.classList.add("preview");
-    if (isSignature) {
-        img.classList.add("signature-preview");
-    }
+    if (isSignature) img.classList.add("signature-preview");
 
-    // --- ส่วนแก้ไข ---
-    // 1. แก้ไขการสร้าง Fallback URLs ที่ไม่สมบูรณ์
-    //    ฟังก์ชัน .replace() ต้องการ 2 ค่า คือ (สิ่งที่ต้องการค้นหา, สิ่งที่จะมาแทนที่)
-    //    นี่คือตัวอย่างการแปลง URL รูปแบบหนึ่งไปเป็นอีกรูปแบบหนึ่ง
     const fallbackUrls = [
-        src, // URL เดิมที่ได้รับมา
-        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/thumbnail?id='), // URL สำรอง 1
-        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/uc?id=')      // URL สำรอง 2
+        src,
+        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/thumbnail?id='),
+        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/uc?id=')
     ];
 
     let currentIndex = 0;
 
-    // 2. สร้างฟังก์ชันสำหรับลองโหลด URL ถัดไป
     function tryNextUrl() {
         if (currentIndex < fallbackUrls.length) {
             img.src = fallbackUrls[currentIndex];
             currentIndex++;
         } else {
-            // หากลองทุก URL แล้วยังล้มเหลว ให้แสดงภาพสำรอง (placeholder)
             img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZjlmYSIgc3Ryb2tlPSIjZGVlMmU2IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNiNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
             img.alt = "ไม่สามารถโหลดรูปได้";
-            img.title = "รูปภาพไม่สามารถแสดงได้";
         }
     }
 
-    // 3. กำหนด Event Handler ทั้งหมดให้อยู่ด้วยกัน
-    img.onerror = tryNextUrl; // เมื่อโหลดรูปภาพล้มเหลว ให้เรียกใช้ tryNextUrl
+    img.onerror = tryNextUrl;
     img.onclick = () => openImageModal(img.src);
-
-    // 4. เริ่มต้นการโหลดรูปภาพด้วย URL แรก
     tryNextUrl();
 
-    // 5. ย้าย return มาไว้ท้ายสุดของฟังก์ชัน
     return img;
 }
 
-// ใช้ฟังก์ชันนี้แทนการสร้าง img element ในฟังก์ชัน renderTable
 function renderTable(sheet, data) {
     const table = document.getElementById("table-" + sheet);
     if (!table) return;
+    
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
     tbody.innerHTML = "";
@@ -200,18 +195,18 @@ function renderTable(sheet, data) {
             }
             tr.appendChild(td);
         });
-        
+
         const tdAct = document.createElement("td");
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "แก้ไข";
         btnEdit.className = "btn-edit";
         btnEdit.onclick = () => openSection(sheet, "edit", row);
-        
+
         const btnDel = document.createElement("button");
         btnDel.textContent = "ลบ";
         btnDel.className = "btn-del";
         btnDel.onclick = () => deleteRow(row.id, sheet);
-        
+
         tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
 
@@ -222,7 +217,7 @@ function renderTable(sheet, data) {
             btnPdf.onclick = () => previewPDF(row);
             tdAct.appendChild(btnPdf);
         }
-        
+
         tr.appendChild(tdAct);
         tbody.appendChild(tr);
     });
@@ -264,15 +259,14 @@ function renderFullTable(sheet, data) {
         if (e.target === modal) modal.remove();
     };
     document.body.appendChild(modal);
-    
-    // Render full table
+
     renderFullTableContent(sheet, data);
 }
 
 function renderFullTableContent(sheet, data) {
     const table = document.getElementById("full-table-" + sheet);
     if (!table) return;
-    
+
     const thead = table.querySelector("thead");
     const tbody = table.querySelector("tbody");
     tbody.innerHTML = "";
@@ -295,7 +289,7 @@ function renderFullTableContent(sheet, data) {
             }
             tr.appendChild(td);
         });
-        
+
         const tdAct = document.createElement("td");
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "แก้ไข";
@@ -304,7 +298,7 @@ function renderFullTableContent(sheet, data) {
             document.querySelector('.modal').remove();
             openSection(sheet, "edit", row);
         };
-        
+
         const btnDel = document.createElement("button");
         btnDel.textContent = "ลบ";
         btnDel.className = "btn-del";
@@ -312,7 +306,7 @@ function renderFullTableContent(sheet, data) {
             document.querySelector('.modal').remove();
             deleteRow(row.id, sheet);
         };
-        
+
         tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
 
@@ -323,7 +317,7 @@ function renderFullTableContent(sheet, data) {
             btnPdf.onclick = () => generatePDF(row);
             tdAct.appendChild(btnPdf);
         }
-        
+
         tr.appendChild(tdAct);
         tbody.appendChild(tr);
     });
@@ -348,7 +342,7 @@ function openImageModal(src) {
 // ===== Validation =====
 function validateFormData(sheet, data) {
     const errors = [];
-    
+
     if (requiredFields[sheet]) {
         requiredFields[sheet].forEach(field => {
             if (!data[field] || String(data[field]).trim() === '') {
@@ -356,35 +350,32 @@ function validateFormData(sheet, data) {
             }
         });
     }
-    
-    // ตรวจสอบรูปแบบเบอร์โทร
+
     const phoneFields = ["เบอร์โทร", "เบอร์ลูกค้า", "เบอร์ช่าง"];
     phoneFields.forEach(field => {
         if (data[field] && !/^[0-9\-+\s()]{8,15}$/.test(data[field])) {
             errors.push(`${field} รูปแบบไม่ถูกต้อง`);
         }
     });
-    
-    // ตรวจสอบ Email
+
     if (data["email"] && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data["email"])) {
         errors.push("รูปแบบ Email ไม่ถูกต้อง");
     }
-    
+
     return errors;
 }
 
-// ===== Fixed: ฟังก์ชันเลขที่ใบงาน & ลำดับ =====
+// ===== Generate Next Numbers =====
 function generateNextWorkNo() {
     const data = currentData["service"] || [];
     if (data.length === 0) return "IDMS001";
-    
-    // หาหมายเลขล่าสุดที่ถูกต้อง
+
     const workNos = data.map(row => {
         const workNo = String(row["เลขที่ใบงาน"] || "");
         const match = workNo.match(/IDMS(\d+)/);
         return match ? parseInt(match[1], 10) : 0;
     }).filter(num => !isNaN(num) && num > 0);
-    
+
     const maxNo = workNos.length > 0 ? Math.max(...workNos) : 0;
     return "IDMS" + String(maxNo + 1).padStart(3, '0');
 }
@@ -392,29 +383,27 @@ function generateNextWorkNo() {
 function generateNextSequence(sheet) {
     const data = currentData[sheet] || [];
     if (data.length === 0) return 1;
-    
-    // หาค่า max ของลำดับที่มีอยู่
+
     const sequences = data.map(row => {
         const seq = parseInt(row["ลำดับ"] || 0, 10);
         return isNaN(seq) ? 0 : seq;
     }).filter(num => num > 0);
-    
+
     const maxSeq = sequences.length > 0 ? Math.max(...sequences) : 0;
     return maxSeq + 1;
 }
 
-// ===== รูปภาพ =====
+// ===== Image Handling =====
 function previewImage(input) {
     const file = input.files[0];
     if (!file) return;
-    
-    // ตรวจสอบขนาดไฟล์ (max 5MB)
+
     if (file.size > 5 * 1024 * 1024) {
         showNotification('ไฟล์รูปภาพใหญ่เกินไป (สูงสุด 5MB)', 'error');
         input.value = '';
         return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = e => {
         const img = input.parentElement.querySelector("img.preview");
@@ -423,28 +412,26 @@ function previewImage(input) {
     reader.readAsDataURL(file);
 }
 
-// ===== Compress Image =====
 function compressImage(file, maxWidth = 800, quality = 0.7) {
     return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const img = new Image();
-        
+
         img.onload = () => {
             const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
             canvas.width = img.width * ratio;
             canvas.height = img.height * ratio;
-            
+
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             canvas.toBlob(resolve, 'image/jpeg', quality);
         };
-        
+
         img.src = URL.createObjectURL(file);
     });
 }
 
-
-// ===== Enhanced Modal Add/Edit with Dropdown Support =====
+// ===== Modal Add/Edit =====
 function openSection(sheet, mode = "add", rowData = null) {
     currentSheet = sheet;
     const modal = document.getElementById("modal");
@@ -455,17 +442,16 @@ function openSection(sheet, mode = "add", rowData = null) {
     form.appendChild(createInput("id", "hidden"));
 
     let fields = (sheet === "service" ? (mode === "edit" ? schemas[sheet] : serviceAddFields) : schemas[sheet]);
-    // ไม่แสดงฟิลด์ id ในฟอร์ม
     fields.filter(f => f !== 'id').forEach(f => {
         const label = document.createElement("label");
         label.textContent = f;
         let input;
-        
+
         const textAreas = ["อาการที่แจ้งเสีย", "ผลการซ่อม", "หมายเหตุ"];
 
         if (textAreas.some(keyword => f.includes(keyword))) {
-        input = document.createElement("textarea");
-        }         else if (f.includes("รูปภาพ")) {
+            input = document.createElement("textarea");
+        } else if (f.includes("รูปภาพ")) {
             input = document.createElement("input");
             input.type = "file";
             input.accept = "image/*";
@@ -482,12 +468,10 @@ function openSection(sheet, mode = "add", rowData = null) {
             btn.onclick = () => openSignature(input);
             label.appendChild(btn);
         } else if (f === "สถานะ" && (sheet === "equipment" || sheet === "sparepart")) {
-            // สถานะ dropdown สำหรับ equipment
             input = document.createElement("select");
             input.innerHTML = '<option value="">เลือกสถานะ</option>' +
                 dropdownOptions.สถานะ.map(option => `<option value="${option}">${option}</option>`).join('');
         } else if (f === "พนักงานขาย" && (sheet === "sales" || sheet === "rental")) {
-            // พนักงานขาย dropdown สำหรับ sales และ rental
             input = document.createElement("select");
             input.innerHTML = '<option value="">เลือกพนักงานขาย</option>' +
                 dropdownOptions.พนักงานขาย.map(option => `<option value="${option}">${option}</option>`).join('');
@@ -510,7 +494,6 @@ function openSection(sheet, mode = "add", rowData = null) {
         form.appendChild(label);
     });
 
-    // 🟢 ตั้งเลขที่ใบงาน และ ลำดับอัตโนมัติ
     if (mode === "add") {
         const today = new Date().toISOString().split('T')[0];
         if (sheet === "service") {
@@ -530,8 +513,7 @@ function openSection(sheet, mode = "add", rowData = null) {
             });
         }
     }
-    
-    // 🟢 กรณีแก้ไข
+
     if (mode === "edit" && rowData) {
         form.querySelector("[name='id']").value = rowData.id;
         schemas[sheet].forEach(f => {
@@ -539,8 +521,7 @@ function openSection(sheet, mode = "add", rowData = null) {
             if (inp && rowData[f] !== undefined && rowData[f] !== null) {
                 if (inp.type !== 'file') {
                     inp.value = rowData[f];
-                    
-                    // แสดง preview สำหรับลายเซ็น
+
                     if (inp.type === 'hidden' && f.includes('ลายเซ็น') && rowData[f]) {
                         const existingPreview = inp.parentElement.querySelector('img.signature-preview');
                         if (existingPreview) {
@@ -554,8 +535,7 @@ function openSection(sheet, mode = "add", rowData = null) {
                     }
                 }
             }
-            
-            // แสดง preview สำหรับรูปภาพ
+
             if (f.includes("รูปภาพ") && rowData[f]) {
                 const img = form.querySelector(`label:has(input[name='${f}']) img`);
                 if (img) img.src = rowData[f];
@@ -563,27 +543,25 @@ function openSection(sheet, mode = "add", rowData = null) {
         });
     }
 
-    // 🟢 ปุ่มบันทึก/ยกเลิก
     const btnSave = document.createElement("button");
     btnSave.type = "submit";
     btnSave.textContent = "บันทึก";
     btnSave.className = "btn-save";
-    
+
     const btnCancel = document.createElement("button");
     btnCancel.type = "button";
     btnCancel.textContent = "ยกเลิก";
     btnCancel.onclick = closeModal;
-    
+
     form.appendChild(btnSave);
     form.appendChild(btnCancel);
 
     let saving = false;
 
-    // ✅ FIX: แก้ไข onsubmit พร้อม validation
     form.onsubmit = async function (e) {
         e.preventDefault();
         if (saving) return;
-        
+
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -593,14 +571,13 @@ function openSection(sheet, mode = "add", rowData = null) {
 
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-        
-        // Validation
+
         const validationErrors = validateFormData(sheet, data);
         if (validationErrors.length > 0) {
             showNotification(validationErrors.join('\n'), 'error');
             return;
         }
-        
+
         saving = true;
         btnSave.disabled = true;
         btnSave.textContent = "กำลังบันทึก...";
@@ -627,7 +604,6 @@ function openSection(sheet, mode = "add", rowData = null) {
                 }
             });
 
-            // Handle signature fields
             const sigInputs = form.querySelectorAll('input[type="hidden"]');
             sigInputs.forEach(input => {
                 const fieldName = input.name;
@@ -639,7 +615,7 @@ function openSection(sheet, mode = "add", rowData = null) {
                     }
                 }
             });
-            
+
             await Promise.all(imagePromises);
 
             data.id = data.id || crypto.randomUUID();
@@ -661,17 +637,16 @@ function openSection(sheet, mode = "add", rowData = null) {
             }
 
             const result = await response.json();
-            
+
             if (result.success) {
                 showNotification('บันทึกข้อมูลเรียบร้อย', 'success');
                 form.reset();
                 closeModal();
                 loadSheetData(sheet);
-            }
-             else {
+            } else {
                 throw new Error(result.error || 'เกิดข้อผิดพลาดในการบันทึก');
             }
-            
+
         } catch (err) {
             console.error(err);
             showNotification('เกิดข้อผิดพลาด: ' + err.message, 'error');
@@ -684,7 +659,6 @@ function openSection(sheet, mode = "add", rowData = null) {
     };
 }
 
-// ===== ปิด modal =====
 function closeModal() {
     document.getElementById("modal").classList.remove("show");
 }
@@ -699,7 +673,7 @@ function createInput(name, type = "text") {
 // ===== ลบข้อมูล =====
 async function deleteRow(id, sheet) {
     if (!confirm("ต้องการลบข้อมูลนี้หรือไม่?")) return;
-    
+
     try {
         showLoading(true);
         const response = await fetch(scriptURL, {
@@ -719,14 +693,14 @@ async function deleteRow(id, sheet) {
         }
 
         const result = await response.json();
-        
+
         if (result.success) {
             showNotification('ลบข้อมูลเรียบร้อย', 'success');
             loadSheetData(sheet);
         } else {
             throw new Error(result.error || 'เกิดข้อผิดพลาดในการลบ');
         }
-        
+
     } catch (error) {
         console.error(error);
         showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
@@ -735,41 +709,48 @@ async function deleteRow(id, sheet) {
     }
 }
 
-// ===== PDF =====
-let lastDoc = null; // เก็บ PDF ล่าสุดที่ Preview แล้ว
+// ===== PDF Generation =====
+let lastDoc = null;
 
 function generatePDF(row) {
     const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
     const doc = new jsPDFLib();
     const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
-    doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
-    doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
-    doc.setFont("THSarabunNew");
+    
+    // ใช้ฟอนต์มาตรฐานแทนฟอนต์ไทย
+    doc.setFont("helvetica");
     doc.setFontSize(12);
 
     let y = 10;
+    
+    // ตรวจสอบว่ามีโลโก้ก่อนจึงเพิ่ม
     try {
-        doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
-    } catch (e) {}
-    y += 25;
+        if (typeof logoBase64 !== 'undefined' && logoBase64) {
+            doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
+            y += 25;
+        }
+    } catch (e) {
+        console.log('ไม่สามารถเพิ่มโลโก้ได้:', e);
+        y += 5;
+    }
 
     doc.setFontSize(20);
     doc.setTextColor(0, 0, 255);
-    doc.setFont("THSarabunNew", "bold"); 
+    doc.setFont(undefined, 'bold'); 
     doc.text("Service Report", 105, y, { align: 'center' }); 
     y += 10;
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
 
     const printLine = (label1, val1, label2, val2) => {
-        doc.setFont("THSarabunNew", "bold");
+        doc.setFont(undefined, 'bold');
         doc.text(`${label1}:`, 20, y);
-        doc.setFont("THSarabunNew", "normal");
+        doc.setFont(undefined, 'normal');
         doc.text(`${val1 || ''}`, 50, y);
 
-        doc.setFont("THSarabunNew", "bold");
+        doc.setFont(undefined, 'bold');
         doc.text(`${label2}:`, 120, y);
-        doc.setFont("THSarabunNew", "normal");
+        doc.setFont(undefined, 'normal');
         doc.text(`${val2 || ''}`, 150, y);
         y += 8;
     };
@@ -779,57 +760,46 @@ function generatePDF(row) {
     printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
     printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
 
-    doc.setFont("THSarabunNew", "bold");
+    doc.setFont(undefined, 'bold');
     doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
-
-    doc.setFont("THSarabunNew", "normal");
+    doc.setFont(undefined, 'normal');
     doc.text(safeText(row["อุปกรณ์ที่ส่งมาด้วย"]), 60, y);
-
     y += 10;
 
-    doc.setFont("THSarabunNew", "bold");
+    doc.setFont(undefined, 'bold');
     doc.text("อาการที่แจ้งเสีย:", 20, y);
     y += 8;
-    doc.setFont("THSarabunNew", "normal");
+    doc.setFont(undefined, 'normal');
     doc.text(safeText(row["อาการที่แจ้งเสีย"]), 35, y);
-
     y += 25;
 
-    doc.setFont("THSarabunNew", "bold");
+    doc.setFont(undefined, 'bold');
     doc.text("ผลการซ่อม:", 20, y);
     y += 8;
-    doc.setFont("THSarabunNew", "normal");
+    doc.setFont(undefined, 'normal');
     doc.text(safeText(row["ผลการซ่อม"]), 35, y);
-
     y += 25;
 
-    doc.setFont("THSarabunNew", "bold");
+    doc.setFont(undefined, 'bold');
     doc.text("รับประกัน:", 20, y);
-
-    doc.setFont("THSarabunNew", "normal");
+    doc.setFont(undefined, 'normal');
     doc.text(safeText(row["รับประกัน"]), 45, y);
-
     y += 10;
 
     if (row["รูปภาพ1"]) doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
     if (row["รูปภาพ2"]) doc.addImage(row["รูปภาพ2"], 'JPEG', 110, y, 80, 50);
-
     y += 55;
 
-    doc.setFont("THSarabunNew", "bold");
+    doc.setFont(undefined, 'bold');
     doc.text("IDMS", 50, y, { align: "center" });
     doc.text("Customer", 150, y, { align: "center" });
-
-    doc.setFont("THSarabunNew", "normal");
+    doc.setFont(undefined, 'normal');
     y += 6;
 
-    // ลายเซ็น
     if (row["ลายเซ็นช่าง"]) doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
     if (row["ลายเซ็นลูกค้า"]) doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
-
     y += 35;
 
-    // ข้อมูลช่าง/ลูกค้า
     const companyName = row["ชื่อช่าง"] || "";
     const companyPhone = row["เบอร์ช่าง"] || "";
     const customerName = row["ชื่อลูกค้า"] || "";
@@ -837,7 +807,6 @@ function generatePDF(row) {
 
     doc.text(`ชื่อ ${safeText(companyName)}`, 50, y, { align: "center" });
     doc.text(`ชื่อ ${safeText(customerName)}`, 150, y, { align: "center" });
-
     y += 6;
 
     doc.text(`เบอร์โทรศัพท์ ${safeText(companyPhone)}`, 50, y, { align: "center" });
@@ -846,14 +815,12 @@ function generatePDF(row) {
     return doc;
 }
 
-// ✅ Preview ก่อน
 function previewPDF(row) {
     const doc = generatePDF(row);
-    lastDoc = doc; // เก็บไว้ให้โหลดทีหลัง
+    lastDoc = doc;
     window.open(doc.output('bloburl'), '_blank');
 }
 
-// ✅ Download หลังจาก Preview
 function downloadPDF(row) {
     if (!lastDoc) {
         alert("กรุณา Preview ก่อนดาวน์โหลด");
@@ -862,8 +829,7 @@ function downloadPDF(row) {
     lastDoc.save(`${row["เลขที่ใบงาน"] || 'service'}_report.pdf`);
 }
 
-
-// ===== Fixed: Signature System =====
+// ===== Signature System =====
 let currentSignatureInput = null;
 
 function openSignature(input) {
@@ -872,32 +838,28 @@ function openSignature(input) {
     if (!popup) {
         createSignaturePopup();
     }
-    
-    document.getElementById("signature-popup").classList.add("show");
+
+    popup.classList.add("show");
     const sigPad = document.getElementById("signature-pad");
     const sigCtx = sigPad.getContext("2d");
-    
-    // Clear canvas
+
     sigCtx.clearRect(0, 0, sigPad.width, sigPad.height);
     sigCtx.fillStyle = "white";
     sigCtx.fillRect(0, 0, sigPad.width, sigPad.height);
-    
-    // Set drawing style
+
     sigCtx.strokeStyle = "black";
     sigCtx.lineWidth = 2;
     sigCtx.lineCap = "round";
     sigCtx.lineJoin = "round";
-    
+
     let drawing = false;
     let lastX = 0;
     let lastY = 0;
 
-    // Remove existing event listeners
     const newSigPad = sigPad.cloneNode(true);
     sigPad.parentNode.replaceChild(newSigPad, sigPad);
     const newSigCtx = newSigPad.getContext("2d");
-    
-    // Reinitialize canvas
+
     newSigCtx.clearRect(0, 0, newSigPad.width, newSigPad.height);
     newSigCtx.fillStyle = "white";
     newSigCtx.fillRect(0, 0, newSigPad.width, newSigPad.height);
@@ -906,7 +868,6 @@ function openSignature(input) {
     newSigCtx.lineCap = "round";
     newSigCtx.lineJoin = "round";
 
-    // Mouse events
     newSigPad.onmousedown = e => {
         drawing = true;
         [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -929,7 +890,6 @@ function openSignature(input) {
         drawing = false;
     };
 
-    // Touch events for mobile
     newSigPad.ontouchstart = e => {
         e.preventDefault();
         const touch = e.touches[0];
@@ -957,7 +917,6 @@ function openSignature(input) {
         drawing = false;
     };
 
-    // Update button references
     updateSignatureButtons(newSigPad);
 }
 
@@ -983,7 +942,7 @@ function updateSignatureButtons(sigPad) {
     const popup = document.getElementById("signature-popup");
     const clearBtn = popup.querySelector('.clear-btn');
     const saveBtn = popup.querySelector('.save-sig-btn');
-    
+
     clearBtn.onclick = () => clearSignature(sigPad);
     saveBtn.onclick = () => saveSignature(sigPad);
 }
@@ -999,11 +958,10 @@ function clearSignature(sigPad = null) {
 function saveSignature(sigPad = null) {
     const canvas = sigPad || document.getElementById("signature-pad");
     const dataURL = canvas.toDataURL();
-    
+
     if (currentSignatureInput) {
         currentSignatureInput.value = dataURL;
-        
-        // แสดง preview ลายเซ็น
+
         const existingPreview = currentSignatureInput.parentElement.querySelector('img.signature-preview');
         if (existingPreview) {
             existingPreview.src = dataURL;
@@ -1014,10 +972,10 @@ function saveSignature(sigPad = null) {
             sigImg.onclick = () => openImageModal(dataURL);
             currentSignatureInput.parentElement.insertBefore(sigImg, currentSignatureInput.parentElement.querySelector('button'));
         }
-        
+
         showNotification('บันทึกลายเซ็นเรียบร้อย', 'success');
     }
-    
+
     closeSignature();
 }
 
@@ -1026,7 +984,7 @@ function closeSignature() {
     currentSignatureInput = null;
 }
 
-// ===== Search and Filter Functions =====
+// ===== Search and Filter =====
 function addSearchFilters() {
     const container = document.getElementById("tables-container");
     const searchDiv = document.createElement("div");
@@ -1050,19 +1008,19 @@ function addSearchFilters() {
 function performSearch() {
     const sheet = document.getElementById("search-sheet").value;
     const searchTerm = document.getElementById("search-input").value.toLowerCase().trim();
-    
+
     if (!sheet || !searchTerm) {
         showNotification('กรุณาเลือกตารางและใส่คำค้นหา', 'warning');
         return;
     }
-    
+
     const data = currentData[sheet] || [];
     const filteredData = data.filter(row => {
         return Object.values(row).some(value => 
             String(value || '').toLowerCase().includes(searchTerm)
         );
     });
-    
+
     renderTable(sheet, filteredData);
     showNotification(`พบข้อมูล ${filteredData.length} รายการ`, 'info');
 }
@@ -1070,12 +1028,11 @@ function performSearch() {
 function clearSearch() {
     document.getElementById("search-sheet").value = '';
     document.getElementById("search-input").value = '';
-    
-    // Reload all tables
+
     sheetsOrder.forEach(sheet => {
         renderTable(sheet, currentData[sheet] || []);
     });
-    
+
     showNotification('ล้างการค้นหาเรียบร้อย', 'success');
 }
 
@@ -1105,20 +1062,19 @@ function exportToCSV() {
         showNotification('กรุณาเลือกตาราง', 'warning');
         return;
     }
-    
+
     const data = currentData[sheet] || [];
     if (data.length === 0) {
         showNotification('ไม่มีข้อมูลให้ส่งออก', 'warning');
         return;
     }
-    
+
     const headers = schemas[sheet].filter(h => h !== 'id');
     let csv = headers.join(',') + '\n';
-    
+
     data.forEach(row => {
         const values = headers.map(header => {
             const value = row[header] || '';
-            // Escape commas and quotes
             if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
                 return `"${value.replace(/"/g, '""')}"`;
             }
@@ -1126,7 +1082,7 @@ function exportToCSV() {
         });
         csv += values.join(',') + '\n';
     });
-    
+
     downloadFile(csv, `${sheet}_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
     showNotification(`ส่งออก CSV สำเร็จ (${data.length} รายการ)`, 'success');
 }
@@ -1137,13 +1093,13 @@ function exportToJSON() {
         showNotification('กรุณาเลือกตาราง', 'warning');
         return;
     }
-    
+
     const data = currentData[sheet] || [];
     if (data.length === 0) {
         showNotification('ไม่มีข้อมูลให้ส่งออก', 'warning');
         return;
     }
-    
+
     const jsonData = JSON.stringify(data, null, 2);
     downloadFile(jsonData, `${sheet}_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
     showNotification(`ส่งออก JSON สำเร็จ (${data.length} รายการ)`, 'success');
@@ -1161,7 +1117,7 @@ function downloadFile(content, filename, contentType) {
     window.URL.revokeObjectURL(url);
 }
 
-// ===== Statistics Functions =====
+// ===== Statistics =====
 function addStatistics() {
     const container = document.getElementById("tables-container");
     const statsDiv = document.createElement("div");
@@ -1169,7 +1125,6 @@ function addStatistics() {
         <div style="background: white; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h3 style="margin-bottom: 10px;">สถิติข้อมูล</h3>
             <div id="statistics-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <!-- Statistics will be populated here -->
             </div>
         </div>
     `;
@@ -1180,13 +1135,13 @@ function addStatistics() {
 function updateStatistics() {
     const statsContent = document.getElementById("statistics-content");
     if (!statsContent) return;
-    
+
     let html = '';
-    
+
     sheetsOrder.forEach(sheet => {
         const data = currentData[sheet] || [];
         const count = data.length;
-        
+
         html += `
             <div style="text-align: center; padding: 10px; background: #ecf0f1; border-radius: 4px;">
                 <div style="font-size: 24px; font-weight: bold; color: #2c3e50;">${count}</div>
@@ -1194,12 +1149,11 @@ function updateStatistics() {
             </div>
         `;
     });
-    
-    // Add today's statistics
+
     const today = new Date().toISOString().split('T')[0];
     const todayService = (currentData.service || []).filter(row => row['วันที่เปิดงาน'] === today).length;
     const todayRequest = (currentData.request || []).filter(row => row['วันที่แจ้งซ่อม'] === today).length;
-    
+
     html += `
         <div style="text-align: center; padding: 10px; background: #e8f8f5; border-radius: 4px; border-left: 4px solid #27ae60;">
             <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${todayService}</div>
@@ -1210,18 +1164,18 @@ function updateStatistics() {
             <div style="color: #f39c12; font-size: 12px;">แจ้งซ่อมวันนี้</div>
         </div>
     `;
-    
+
     statsContent.innerHTML = html;
 }
 
-// ===== Auto-refresh Functions =====
+// ===== Auto-refresh =====
 let autoRefreshInterval = null;
 
 function enableAutoRefresh(intervalMinutes = 5) {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
     }
-    
+
     autoRefreshInterval = setInterval(() => {
         console.log('Auto refreshing data...');
         sheetsOrder.forEach(sheet => {
@@ -1229,7 +1183,7 @@ function enableAutoRefresh(intervalMinutes = 5) {
         });
         updateStatistics();
     }, intervalMinutes * 60 * 1000);
-    
+
     showNotification(`เปิดการอัพเดทอัตโนมัติทุก ${intervalMinutes} นาที`, 'info');
 }
 
@@ -1241,28 +1195,10 @@ function disableAutoRefresh() {
     }
 }
 
-// ===== Initialize Application =====
-function initializeApp() {
-    // Add CSS for new components if not already present
-    addDynamicCSS();
-    
-    // Load all tables
-    loadAllTables();
-    
-    // Add additional features
-    setTimeout(() => {
-        addStatistics();
-        addSearchFilters();
-        addExportButtons();
-        
-        // Enable auto-refresh every 5 minutes
-        enableAutoRefresh(5);
-    }, 1000);
-}
-
+// ===== Dynamic CSS =====
 function addDynamicCSS() {
     if (document.getElementById('dynamic-styles')) return;
-    
+
     const style = document.createElement('style');
     style.id = 'dynamic-styles';
     style.textContent = `
@@ -1369,7 +1305,6 @@ function addDynamicCSS() {
         .cancel-sig-btn { background: #95a5a6; color: white; }
         .cancel-sig-btn:hover { background: #7f8c8d; }
         
-        /* Enhanced styles for dropdowns and new image fields */
         select {
             padding: 8px 12px;
             border: 1px solid #ddd;
@@ -1401,7 +1336,6 @@ function addDynamicCSS() {
             border: 2px solid #3498db;
         }
         
-        /* Responsive improvements */
         @media (max-width: 768px) {
             #signature-pad {
                 width: 300px;
@@ -1426,7 +1360,6 @@ function addDynamicCSS() {
             }
         }
         
-        /* Table improvements for new image columns */
         .data-table td img.preview {
             max-width: 60px;
             max-height: 60px;
@@ -1437,12 +1370,12 @@ function addDynamicCSS() {
     document.head.appendChild(style);
 }
 
-
-
 // ===== Start Application =====
-// Auto-initialize when DOM is loaded
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
 } else {
     initializeApp();
 }
+
+// Fallback logo variable
+const logoBase64 = typeof logoBase64 !== 'undefined' ? logoBase64 : '';
