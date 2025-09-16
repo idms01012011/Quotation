@@ -141,28 +141,58 @@ function createImageElement(src, isSignature = false) {
     img.classList.add("preview");
     if (isSignature) img.classList.add("signature-preview");
 
-    const fallbackUrls = [
-        src,
-        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/thumbnail?id='),
-        src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/uc?id=')
-    ];
+    // --- ส่วนแก้ไข: ปรับปรุงการสร้าง Fallback URLs ให้มีประสิทธิภาพและครอบคลุมมากขึ้น ---
+    const uniqueUrls = new Set();
+
+    // 1. เพิ่ม URL เดิมเป็นอันดับแรก
+    if (src) {
+        uniqueUrls.add(src);
+    }
+
+    // 2. พยายามดึง Google Drive File ID และเพิ่มลิงก์เข้าถึงโดยตรงทั่วไป
+    let fileId = null;
+    const driveIdMatch = src ? (src.match(/id=([a-zA-Z0-9_-]+)/) || src.match(/\/d\/([a-zA-Z0-9_-]+)/)) : null;
+    if (driveIdMatch && driveIdMatch[1]) {
+        fileId = driveIdMatch[1];
+        uniqueUrls.add(`https://drive.google.com/uc?id=${fileId}`);
+        uniqueUrls.add(`https://drive.google.com/thumbnail?id=${fileId}`);
+    }
+
+    // 3. จัดการรูปแบบ URL เฉพาะของ `googleusercontent.com/profile/picture/1`
+    //    (ตามที่ระบุในโค้ดเดิม) กรณีนี้อาจเป็นลิงก์ที่ฝังจากบริการ Google บางประเภท
+    if (src && src.includes('googleusercontent.com/profile/picture/1')) {
+        const transformedThumbnail = src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/thumbnail?id=');
+        const transformedUc = src.replace('googleusercontent.com/profile/picture/1', 'drive.google.com/uc?id=');
+        uniqueUrls.add(transformedThumbnail);
+        uniqueUrls.add(transformedUc);
+    }
+
+    // แปลง Set เป็น Array เพื่อใช้เป็นลำดับการลอง
+    const fallbackUrls = Array.from(uniqueUrls);
 
     let currentIndex = 0;
 
+    // ฟังก์ชันสำหรับลองโหลด URL ถัดไป
     function tryNextUrl() {
         if (currentIndex < fallbackUrls.length) {
             img.src = fallbackUrls[currentIndex];
             currentIndex++;
         } else {
+            // หากลองทุก URL แล้วยังล้มเหลว ให้แสดงภาพสำรอง (placeholder)
             img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZjlmYSIgc3Ryb2tlPSIjZGVlMmU2IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNiNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
             img.alt = "ไม่สามารถโหลดรูปได้";
+            img.title = "รูปภาพไม่สามารถแสดงได้";
         }
     }
 
-    img.onerror = tryNextUrl;
-    img.onclick = () => openImageModal(img.src);
+    // กำหนด Event Handler ทั้งหมดให้อยู่ด้วยกัน
+    img.onerror = tryNextUrl; // เมื่อโหลดรูปภาพล้มเหลว ให้เรียกใช้ tryNextUrl
+    img.onclick = () => openImageModal(img.src); // คลิกเพื่อเปิด Modal ดูรูปภาพ
+
+    // เริ่มต้นการโหลดรูปภาพด้วย URL แรก
     tryNextUrl();
 
+    // คืนค่าองค์ประกอบ img
     return img;
 }
 
@@ -314,7 +344,7 @@ function renderFullTableContent(sheet, data) {
             const btnPdf = document.createElement("button");
             btnPdf.textContent = "PDF";
             btnPdf.className = "btn-pdf";
-            btnPdf.onclick = () => generatePDF(row);
+            btnPdf.onclick = () => previewPDF(row);
             tdAct.appendChild(btnPdf);
         }
 
@@ -661,11 +691,16 @@ function openSection(sheet, mode = "add", rowData = null) {
 
 function closeModal() {
     const modal = document.getElementById("modal");
-    modal.classList.remove("show");
+    if (modal) modal.classList.remove("show");
     
     // ปิด signature popup ด้วย
     const sigPopup = document.getElementById("signature-popup");
     if (sigPopup) sigPopup.classList.remove("show");
+
+    // ปิด modals สำหรับ PDF options/viewer ด้วย
+    const pdfModals = document.querySelectorAll('.modal.show[style*="z-index: 2000"]');
+    pdfModals.forEach(m => m.remove());
+    currentPDFRow = null; // Clear the current PDF row
 }
 
 function createInput(name, type = "text") {
@@ -713,9 +748,10 @@ async function deleteRow(id, sheet) {
         showLoading(false);
     }
 }
+
 // ===== PDF Generation (Fixed for Mobile) =====
-let lastDoc = null;
-let currentPDFRow = null;
+let lastDoc = null; // เก็บ PDF ล่าสุดที่ Preview แล้ว
+let currentPDFRow = null; // เก็บข้อมูล row ที่ใช้สร้าง PDF ล่าสุด
 
 // ฟังก์ชันตรวจสอบว่าเป็นมือถือหรือไม่
 function isMobileDevice() {
@@ -724,7 +760,7 @@ function isMobileDevice() {
 
 // แก้ไขฟังก์ชัน previewPDF
 function previewPDF(row) {
-    currentPDFRow = row;
+    currentPDFRow = row; // เก็บข้อมูล row ไว้ใช้ในภายหลัง
     
     if (isMobileDevice()) {
         // บนมือถือให้แสดง options
@@ -735,11 +771,23 @@ function previewPDF(row) {
     }
 }
 
+// ฟังก์ชันสร้างและ Preview PDF สำหรับ Desktop
+function generateAndPreviewPDF(row) {
+    const doc = generatePDF(row);
+    if (!doc) {
+        showNotification('ไม่สามารถสร้าง PDF ได้', 'error');
+        return;
+    }
+    lastDoc = doc; // เก็บไว้ให้โหลดทีหลัง
+    window.open(doc.output('bloburl'), '_blank');
+}
+
+
 // แสดง options PDF
 function showPDFOptions() {
     const modal = document.createElement('div');
     modal.className = 'modal show';
-    modal.style.zIndex = '2000';
+    modal.style.zIndex = '2000'; // ให้ modal นี้อยู่บนสุด
     modal.innerHTML = `
         <div class="modal-content" style="text-align: center; max-width: 300px;">
             <h3 style="margin-bottom: 20px;">เลือกวิธีการดูรายงาน</h3>
@@ -756,7 +804,7 @@ function showPDFOptions() {
     `;
     modal.onclick = function(e) {
         if (e.target === modal) {
-            modal.remove();
+            closeModal(); // ใช้ closeModal เพื่อปิด modal
         }
     };
     document.body.appendChild(modal);
@@ -766,21 +814,24 @@ function showPDFOptions() {
 function viewHTMLPDF() {
     if (!currentPDFRow) return;
     
+    // ปิด modal options ก่อนเปิด HTML viewer
+    closeModal(); 
+
     const modal = document.createElement('div');
     modal.className = 'modal show';
-    modal.style.zIndex = '2000';
-    modal.style.background = 'white';
-    
+    modal.style.zIndex = '2000'; // ให้ modal นี้อยู่บนสุด
+    modal.style.background = 'white'; // ตั้งพื้นหลังเป็นสีขาว
+
     const pdfContent = `
         <div style="max-width: 100%; height: 100vh; overflow: auto; padding: 20px; background: white;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <h2 style="margin: 0; color: #2c3e50;">📋 Service Report</h2>
                 <div>
-                    <button onclick="printPDF()" style="padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">🖨️ พิมพ์</button>
+                    <button onclick="printHTMLContent()" style="padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">🖨️ พิมพ์</button>
                     <button onclick="closeModal()" style="padding: 10px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ ปิด</button>
                 </div>
             </div>
-            <div id="pdf-content" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <div id="pdf-html-content" style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
                 ${createPDFHTMLContent(currentPDFRow)}
             </div>
         </div>
@@ -794,9 +845,13 @@ function viewHTMLPDF() {
 function createPDFHTMLContent(row) {
     const safeText = (val) => (val !== undefined && val !== null ? String(val) : '-');
     
+    const logoHtml = typeof logoBase64 !== 'undefined' && logoBase64 ? 
+        `<img src="${logoBase64}" alt="Company Logo" style="width: 80px; height: auto; margin-bottom: 15px;">` : '';
+
     return `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+        <div style="font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #3498db;">
+                ${logoHtml}
                 <h1 style="color: #3498db; margin-bottom: 5px; font-size: 28px;">Service Report</h1>
                 <p style="color: #7f8c8d; font-size: 16px;">เลขที่ใบงาน: ${safeText(row["เลขที่ใบงาน"])}</p>
             </div>
@@ -856,39 +911,43 @@ function createPDFHTMLContent(row) {
                 </div>
             </div>
             
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 25px;">
+                ${(row["รูปภาพ1"] ? `<img src="${row["รูปภาพ1"]}" alt="รูปภาพ1" style="max-width: 150px; max-height: 100px; border: 1px solid #ddd; margin: 5px;">` : '')}
+                ${(row["รูปภาพ2"] ? `<img src="${row["รูปภาพ2"]}" alt="รูปภาพ2" style="max-width: 150px; max-height: 100px; border: 1px solid #ddd; margin: 5px;">` : '')}
+            </div>
+
             <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
                 <div style="text-align: center; flex: 1; min-width: 200px;">
                     <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 15px; padding-bottom: 10px; font-weight: bold;">ลายเซ็นช่าง</div>
+                    ${(row["ลายเซ็นช่าง"] ? `<img src="${row["ลายเซ็นช่าง"]}" alt="ลายเซ็นช่าง" style="max-width: 150px; max-height: 75px; margin-bottom: 10px;">` : '')}
                     <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${safeText(row["ชื่อช่าง"])}</div>
                     <div style="color: #7f8c8d;">${safeText(row["เบอร์ช่าง"])}</div>
                 </div>
                 
                 <div style="text-align: center; flex: 1; min-width: 200px;">
                     <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 15px; padding-bottom: 10px; font-weight: bold;">ลายเซ็นลูกค้า</div>
-                    <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${safeText(row["名前ลูกค้า"])}</div>
+                    ${(row["ลายเซ็นลูกค้า"] ? `<img src="${row["ลายเซ็นลูกค้า"]}" alt="ลายเซ็นลูกค้า" style="max-width: 150px; max-height: 75px; margin-bottom: 10px;">` : '')}
+                    <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${safeText(row["ชื่อลูกค้า"])}</div>
                     <div style="color: #7f8c8d;">${safeText(row["เบอร์ลูกค้า"])}</div>
                 </div>
             </div>
             
             <div style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px; border-top: 1px solid #ddd; padding-top: 15px;">
                 <p>เอกสารนี้ถูกสร้างขึ้นโดยระบบจัดการข้อมูล IDMS</p>
-                <p>วันที่สร้าง: ${new Date().toLocaleDateString('th-TH')}</p>
+                <p>วันที่สร้าง: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
         </div>
     `;
 }
 
-// พิมพ์ PDF
-function printPDF() {
-    const content = document.getElementById('pdf-content');
-    const originalContent = content.innerHTML;
-    
-    const printContent = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px;">
-            ${content.innerHTML}
-        </div>
-    `;
-    
+// พิมพ์ PDF จาก HTML content
+function printHTMLContent() {
+    const contentToPrint = document.getElementById('pdf-html-content');
+    if (!contentToPrint) {
+        showNotification('ไม่พบเนื้อหา PDF สำหรับพิมพ์', 'error');
+        return;
+    }
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <!DOCTYPE html>
@@ -896,7 +955,13 @@ function printPDF() {
         <head>
             <title>Service Report - Print</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+                body { margin: 0; padding: 20px; font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; font-size: 12pt; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                h1, h2, h3 { color: #333; margin-top: 20px; margin-bottom: 10px; }
+                div { line-height: 1.5; }
+                img { max-width: 100%; height: auto; }
                 @media print {
                     body { margin: 0; padding: 0; }
                     .no-print { display: none !important; }
@@ -904,7 +969,7 @@ function printPDF() {
             </style>
         </head>
         <body>
-            ${printContent}
+            ${contentToPrint.innerHTML}
             <script>
                 window.onload = function() {
                     window.print();
@@ -919,10 +984,14 @@ function printPDF() {
     printWindow.document.close();
 }
 
+
 // ดาวน์โหลด PDF
 function downloadPDFFile() {
     if (!currentPDFRow) return;
     
+    // ปิด modal options ก่อนดาวน์โหลด
+    closeModal(); 
+
     try {
         const doc = generatePDF(currentPDFRow);
         if (!doc) return;
@@ -937,34 +1006,20 @@ function downloadPDFFile() {
     }
 }
 
-// ปิด modal
-function closeModal() {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        if (modal.style.zIndex === '2000') {
-            modal.remove();
-        }
-    });
-    currentPDFRow = null;
-}
-
-// ฟังก์ชัน generatePDF 
-// ===== PDF Generation with Thai Font Support =====
+// ฟังก์ชัน generatePDF สำหรับสร้างเอกสาร PDF จริง
 function generatePDF(row) {
     try {
         const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
         const doc = new jsPDFLib();
         const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
 
-        // ตรวจสอบและใช้ฟอนต์ไทย
         let hasThaiFont = false;
         try {
+            // Check if THSarabun and THSarabunBold (from base64) are globally available
             if (typeof THSarabun !== 'undefined') {
-                // เพิ่มฟอนต์ปกติ
                 doc.addFileToVFS("THSarabun.ttf", THSarabun);
                 doc.addFont("THSarabun.ttf", "THSarabun", "normal");
                 
-                // เพิ่มฟอนต์ตัวหนา (ถ้ามี)
                 if (typeof THSarabunBold !== 'undefined') {
                     doc.addFileToVFS("THSarabun-Bold.ttf", THSarabunBold);
                     doc.addFont("THSarabun-Bold.ttf", "THSarabun", "bold");
@@ -974,23 +1029,29 @@ function generatePDF(row) {
                 doc.setFont("THSarabun");
             }
         } catch (e) {
-            console.log('ไม่สามารถโหลดฟอนต์ไทย:', e);
-            // fallback to helvetica
+            console.warn('Could not add Thai font (THSarabun). Falling back to Helvetica.', e);
+            // Fallback to helvetica
             doc.setFont("helvetica");
         }
 
         doc.setFontSize(12);
         let y = 10;
 
-        // หัวข้อรายงาน
+        // Company Logo
+        try {
+            if (typeof logoBase64 !== 'undefined' && logoBase64) {
+                doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
+            }
+        } catch (e) {
+            console.warn('Could not add company logo to PDF:', e);
+        }
+        y += 25; // Adjust y position after logo
+
+        // Title
         doc.setFontSize(20);
         doc.setTextColor(0, 0, 255);
         
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
-            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
         
         doc.text("รายงานการซ่อม", 105, y, { align: 'center' });
         y += 10;
@@ -998,128 +1059,54 @@ function generatePDF(row) {
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(12);
         
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
 
-        // ฟังก์ชันสำหรับพิมพ์บรรทัด
+        // Function to print a line with labels and values
         const printLine = (label1, val1, label2, val2) => {
-            // ข้อความ label ใช้ตัวหนา
-            if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-                doc.setFont("THSarabun", "bold");
-            } else {
-                doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-            }
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
             doc.text(`${label1}:`, 20, y);
             
-            // ข้อความ value ใช้ตัวปกติ
-            if (hasThaiFont) {
-                doc.setFont("THSarabun", "normal");
-            } else {
-                doc.setFont("helvetica", "normal");
-            }
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
             doc.text(`${val1 || ''}`, 50, y);
 
-            // ข้อความ label ใช้ตัวหนา
-            if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-                doc.setFont("THSarabun", "bold");
-            } else {
-                doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-            }
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
             doc.text(`${label2}:`, 120, y);
             
-            // ข้อความ value ใช้ตัวปกติ
-            if (hasThaiFont) {
-                doc.setFont("THSarabun", "normal");
-            } else {
-                doc.setFont("helvetica", "normal");
-            }
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
             doc.text(`${val2 || ''}`, 150, y);
             
             y += 8;
         };
 
-        // ข้อมูลพื้นฐาน
+        // Basic Info
         printLine("เลขที่ใบงาน", safeText(row["เลขที่ใบงาน"]), "ประเภทงาน", safeText(row["ประเภทงาน"]));
-        printLine("ชื่อโรงพยาบาล", safeText(row["ชื่อโรงพยาบาล"]), "วันที่", safeText(row["วันที่เปิดงาน"]));
-        printLine("ชื่อเครื่อง", safeText(row["ชื่อเครื่อง"]), "Brand", safeText(row["ยี่ห้อ"]));
+        printLine("ชื่อโรงพยาบาล", safeText(row["ชื่อโรงพยาบาล"]), "วันที่เปิดงาน", safeText(row["วันที่เปิดงาน"]));
+        printLine("ชื่อเครื่อง", safeText(row["ชื่อเครื่อง"]), "ยี่ห้อ", safeText(row["ยี่ห้อ"]));
         printLine("รุ่น", safeText(row["รุ่น"]), "S/N", safeText(row["หมายเลขเครื่อง"]));
+        y += 5; // Add some space
 
-        // อุปกรณ์ที่ส่งมาด้วย
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
+        // Details Section (Multiline Support)
+        const printSection = (title, content, startX = 35, width = 150) => {
             doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
-        doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
-        
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
-        
-        const equipmentText = doc.splitTextToSize(safeText(row["อุปกรณ์ที่ส่งมาด้วย"] || ""), 150);
-        doc.text(equipmentText, 60, y);
-        y += equipmentText.length * 6;
+            doc.text(`${title}:`, 20, y);
+            y += 8;
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
+            const splitContent = doc.splitTextToSize(safeText(content || ""), width);
+            doc.text(splitContent, startX, y);
+            y += (splitContent.length * 6) + 10; // 6 is roughly line height
+        };
 
-        // อาการที่แจ้งเสีย
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
-            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
-        doc.text("อาการที่แจ้งเสีย:", 20, y);
-        y += 8;
-        
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
-        
-        const symptomText = doc.splitTextToSize(safeText(row["อาการที่แจ้งเสีย"] || ""), 150);
-        doc.text(symptomText, 35, y);
-        y += symptomText.length * 6 + 10;
+        printSection("อุปกรณ์ที่ส่งมาด้วย", row["อุปกรณ์ที่ส่งมาด้วย"], 60);
+        printSection("อาการที่แจ้งเสีย", row["อาการที่แจ้งเสีย"]);
+        printSection("ผลการซ่อม", row["ผลการซ่อม"]);
 
-        // ผลการซ่อม
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
-            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
-        doc.text("ผลการซ่อม:", 20, y);
-        y += 8;
-        
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
-        
-        const resultText = doc.splitTextToSize(safeText(row["ผลการซ่อม"] || ""), 150);
-        doc.text(resultText, 35, y);
-        y += resultText.length * 6 + 10;
-
-        // รับประกัน
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
-            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
         doc.text("รับประกัน:", 20, y);
-        
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
         doc.text(safeText(row["รับประกัน"] || ""), 45, y);
         y += 10;
 
-        // รูปภาพ (ถ้ามี)
+        // Images (if available)
         try {
             if (row["รูปภาพ1"]) {
                 doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
@@ -1129,51 +1116,44 @@ function generatePDF(row) {
             }
             y += 60;
         } catch (e) {
-            console.log('ไม่สามารถเพิ่มรูปภาพใน PDF:', e);
-            y += 20;
+            console.warn('Could not add images to PDF:', e);
+            y += 20; // Just add some space if images fail
         }
 
-        // ลายเซ็น
-        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
-            doc.setFont("THSarabun", "bold");
-        } else {
-            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
-        }
-        doc.text("IDMS", 50, y, { align: "center" });
+        // Signatures
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        doc.text("ช่าง", 50, y, { align: "center" });
         doc.text("ลูกค้า", 150, y, { align: "center" });
         
-        if (hasThaiFont) {
-            doc.setFont("THSarabun", "normal");
-        } else {
-            doc.setFont("helvetica", "normal");
-        }
         y += 6;
+        doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "normal");
 
         try {
             if (row["ลายเซ็นช่าง"]) {
-                doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30);
+                doc.addImage(row["ลายเซ็นช่าง"], 'JPEG', 20, y, 60, 30); // x, y, width, height
             }
             if (row["ลายเซ็นลูกค้า"]) {
                 doc.addImage(row["ลายเซ็นลูกค้า"], 'JPEG', 120, y, 60, 30);
             }
             y += 40;
         } catch (e) {
-            console.log('ไม่สามารถเพิ่มลายเซ็นใน PDF:', e);
-            y += 20;
+            console.warn('Could not add signatures to PDF:', e);
+            y += 20; // Add space if signatures fail
         }
 
-        // ข้อมูลติดต่อ
-        const companyName = row["ชื่อช่าง"] || "";
-        const companyPhone = row["เบอร์ช่าง"] || "";
-        const customerName = row["ชื่อลูกค้า"] || "";
-        const customerPhone = row["เบอร์ลูกค้า"] || "";
-
-        doc.text(`ชื่อ ${safeText(companyName)}`, 50, y, { align: "center" });
-        doc.text(`ชื่อ ${safeText(customerName)}`, 150, y, { align: "center" });
+        // Contact Info below signatures
+        doc.text(`ชื่อ ${safeText(row["ชื่อช่าง"])}`, 50, y, { align: "center" });
+        doc.text(`ชื่อ ${safeText(row["ชื่อลูกค้า"])}`, 150, y, { align: "center" });
         y += 6;
 
-        doc.text(`เบอร์โทร ${safeText(companyPhone)}`, 50, y, { align: "center" });
-        doc.text(`เบอร์โทร ${safeText(customerPhone)}`, 150, y, { align: "center" });
+        doc.text(`เบอร์โทร ${safeText(row["เบอร์ช่าง"])}`, 50, y, { align: "center" });
+        doc.text(`เบอร์โทร ${safeText(row["เบอร์ลูกค้า"])}`, 150, y, { align: "center" });
+        y += 10;
+
+        // Footer
+        doc.setFontSize(10);
+        doc.text(`เอกสารนี้ถูกสร้างขึ้นโดยระบบจัดการข้อมูล IDMS - ${new Date().toLocaleDateString('th-TH')}`, 105, 290, { align: 'center' });
+
 
         return doc;
     } catch (error) {
@@ -1182,6 +1162,7 @@ function generatePDF(row) {
         return null;
     }
 }
+
 
 // ===== Signature System =====
 let currentSignatureInput = null;
@@ -1283,8 +1264,8 @@ function createSignaturePopup() {
             <h3>ลายเซ็น</h3>
             <canvas id="signature-pad" width="400" height="200"></canvas>
             <div class="signature-buttons">
-                <button type="button" class="clear-btn" onclick="clearSignature()">ล้าง</button>
-                <button type="button" class="save-sig-btn" onclick="saveSignature()">บันทึก</button>
+                <button type="button" class="clear-btn">ล้าง</button>
+                <button type="button" class="save-sig-btn">บันทึก</button>
                 <button type="button" class="cancel-sig-btn" onclick="closeSignature()">ยกเลิก</button>
             </div>
         </div>
@@ -1556,6 +1537,51 @@ function addDynamicCSS() {
     const style = document.createElement('style');
     style.id = 'dynamic-styles';
     style.textContent = `
+        /* General Modal styling for PDF options/viewer */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+            padding-top: 60px; /* Location of the box */
+        }
+        .modal.show {
+            display: flex; /* Show the modal */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+            position: relative; /* Needed for close button positioning */
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            right: 20px;
+            top: 10px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+
         .notification {
             position: fixed;
             top: 20px;
@@ -1731,5 +1757,8 @@ if (document.readyState === 'loading') {
     initializeApp();
 }
 
-// Fallback logo variable
+// Fallback logo variable (assuming it might be defined elsewhere, if not, it will be an empty string)
 const logoBase64 = typeof logoBase64 !== 'undefined' ? logoBase64 : '';
+// Fallback Thai font variables (assuming they might be defined elsewhere)
+const THSarabun = typeof THSarabun !== 'undefined' ? THSarabun : undefined;
+const THSarabunBold = typeof THSarabunBold !== 'undefined' ? THSarabunBold : undefined;
