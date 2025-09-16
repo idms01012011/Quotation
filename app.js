@@ -944,80 +944,177 @@ function closeModal() {
 }
 
 // ฟังก์ชัน generatePDF 
+// ===== PDF Generation with Thai Font Support =====
 function generatePDF(row) {
     try {
         const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
         const doc = new jsPDFLib();
         const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
-        
-        // ใช้ฟอนต์มาตรฐาน
-        doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
-        doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
-        doc.setFont("THSarabunNew"); 
-        doc.setFontSize(12);
 
+        // ตรวจสอบและใช้ฟอนต์ไทย
+        let hasThaiFont = false;
+        try {
+            if (typeof THSarabun !== 'undefined') {
+                // เพิ่มฟอนต์ปกติ
+                doc.addFileToVFS("THSarabun.ttf", THSarabun);
+                doc.addFont("THSarabun.ttf", "THSarabun", "normal");
+                
+                // เพิ่มฟอนต์ตัวหนา (ถ้ามี)
+                if (typeof THSarabunBold !== 'undefined') {
+                    doc.addFileToVFS("THSarabun-Bold.ttf", THSarabunBold);
+                    doc.addFont("THSarabun-Bold.ttf", "THSarabun", "bold");
+                }
+                
+                hasThaiFont = true;
+                doc.setFont("THSarabun");
+            }
+        } catch (e) {
+            console.log('ไม่สามารถโหลดฟอนต์ไทย:', e);
+            // fallback to helvetica
+            doc.setFont("helvetica");
+        }
+
+        doc.setFontSize(12);
         let y = 10;
 
+        // หัวข้อรายงาน
         doc.setFontSize(20);
         doc.setTextColor(0, 0, 255);
-        doc.setFont("THSarabunNew", 'bold'); 
-        doc.text("Service Report", 105, y, { align: 'center' }); 
+        
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
+        
+        doc.text("รายงานการซ่อม", 105, y, { align: 'center' });
         y += 10;
+        
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(12);
+        
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
 
+        // ฟังก์ชันสำหรับพิมพ์บรรทัด
         const printLine = (label1, val1, label2, val2) => {
-            doc.setFont("THSarabunNew", 'bold');
+            // ข้อความ label ใช้ตัวหนา
+            if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+                doc.setFont("THSarabun", "bold");
+            } else {
+                doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+            }
             doc.text(`${label1}:`, 20, y);
-            doc.setFont("THSarabunNew", 'normal');
+            
+            // ข้อความ value ใช้ตัวปกติ
+            if (hasThaiFont) {
+                doc.setFont("THSarabun", "normal");
+            } else {
+                doc.setFont("helvetica", "normal");
+            }
             doc.text(`${val1 || ''}`, 50, y);
 
-            doc.setFont("THSarabunNew", 'bold');
+            // ข้อความ label ใช้ตัวหนา
+            if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+                doc.setFont("THSarabun", "bold");
+            } else {
+                doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+            }
             doc.text(`${label2}:`, 120, y);
-            doc.setFont("THSarabunNew", 'normal');
+            
+            // ข้อความ value ใช้ตัวปกติ
+            if (hasThaiFont) {
+                doc.setFont("THSarabun", "normal");
+            } else {
+                doc.setFont("helvetica", "normal");
+            }
             doc.text(`${val2 || ''}`, 150, y);
+            
             y += 8;
         };
 
-        printLine("เลขที่ / No", row["เลขที่ใบงาน"], "ประเภทงาน", row["ประเภทงาน"]);
-        printLine("ชื่อโรงพยาบาล", row["ชื่อโรงพยาบาล"], "วันที่", row["วันที่เปิดงาน"]);
-        printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
-        printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
+        // ข้อมูลพื้นฐาน
+        printLine("เลขที่ใบงาน", safeText(row["เลขที่ใบงาน"]), "ประเภทงาน", safeText(row["ประเภทงาน"]));
+        printLine("ชื่อโรงพยาบาล", safeText(row["ชื่อโรงพยาบาล"]), "วันที่", safeText(row["วันที่เปิดงาน"]));
+        printLine("ชื่อเครื่อง", safeText(row["ชื่อเครื่อง"]), "Brand", safeText(row["ยี่ห้อ"]));
+        printLine("รุ่น", safeText(row["รุ่น"]), "S/N", safeText(row["หมายเลขเครื่อง"]));
 
-        doc.setFont("THSarabunNew", 'bold');
+        // อุปกรณ์ที่ส่งมาด้วย
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
         doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
-        doc.setFont("THSarabunNew", 'normal');
         
-        // ใช้ splitTextToSize สำหรับข้อความยาว
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
+        
         const equipmentText = doc.splitTextToSize(safeText(row["อุปกรณ์ที่ส่งมาด้วย"] || ""), 150);
         doc.text(equipmentText, 60, y);
         y += equipmentText.length * 6;
 
-        doc.setFont("THSarabunNew", 'bold');
+        // อาการที่แจ้งเสีย
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
         doc.text("อาการที่แจ้งเสีย:", 20, y);
         y += 8;
-        doc.setFont("THSarabunNew", 'normal');
+        
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
         
         const symptomText = doc.splitTextToSize(safeText(row["อาการที่แจ้งเสีย"] || ""), 150);
         doc.text(symptomText, 35, y);
         y += symptomText.length * 6 + 10;
 
-        doc.setFont("THSarabunNew", 'bold');
+        // ผลการซ่อม
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
         doc.text("ผลการซ่อม:", 20, y);
         y += 8;
-        doc.setFont("THSarabunNew", 'normal');
+        
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
         
         const resultText = doc.splitTextToSize(safeText(row["ผลการซ่อม"] || ""), 150);
         doc.text(resultText, 35, y);
         y += resultText.length * 6 + 10;
 
-        doc.setFont("THSarabunNew", 'bold');
+        // รับประกัน
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
         doc.text("รับประกัน:", 20, y);
-        doc.setFont("THSarabunNew", 'normal');
+        
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
         doc.text(safeText(row["รับประกัน"] || ""), 45, y);
         y += 10;
 
-        // รูปภาพ
+        // รูปภาพ (ถ้ามี)
         try {
             if (row["รูปภาพ1"]) {
                 doc.addImage(row["รูปภาพ1"], 'JPEG', 20, y, 80, 50);
@@ -1032,10 +1129,19 @@ function generatePDF(row) {
         }
 
         // ลายเซ็น
-        doc.setFont("THSarabunNew", 'bold');
+        if (hasThaiFont && typeof THSarabunBold !== 'undefined') {
+            doc.setFont("THSarabun", "bold");
+        } else {
+            doc.setFont(hasThaiFont ? "THSarabun" : "helvetica", "bold");
+        }
         doc.text("IDMS", 50, y, { align: "center" });
-        doc.text("Customer", 150, y, { align: "center" });
-        doc.setFont("THSarabunNew", 'normal');
+        doc.text("ลูกค้า", 150, y, { align: "center" });
+        
+        if (hasThaiFont) {
+            doc.setFont("THSarabun", "normal");
+        } else {
+            doc.setFont("helvetica", "normal");
+        }
         y += 6;
 
         try {
