@@ -951,27 +951,30 @@ function generatePDF(row) {
         const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
         
         // ใช้ฟอนต์มาตรฐาน
-        doc.addFileToVFS("THSarabunNew.ttf", thsarabun); doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal"); doc.setFont("THSarabunNew"); doc.setFontSize(12);
+        doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
+doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
+doc.setFont("THSarabunNew"); 
+doc.setFontSize(12);
 
         let y = 10;
 
         doc.setFontSize(20);
         doc.setTextColor(0, 0, 255);
-        doc.setFont(undefined, 'bold'); 
+        doc.setFont(THSarabunNew, 'bold'); 
         doc.text("Service Report", 105, y, { align: 'center' }); 
         y += 10;
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(12);
 
         const printLine = (label1, val1, label2, val2) => {
-            doc.setFont(undefined, 'bold');
+            doc.setFont(THSarabunNew, 'bold');
             doc.text(`${label1}:`, 20, y);
-            doc.setFont(undefined, 'normal');
+            doc.setFont(THSarabunNew, 'normal');
             doc.text(`${val1 || ''}`, 50, y);
 
-            doc.setFont(undefined, 'bold');
+            doc.setFont(THSarabunNew, 'bold');
             doc.text(`${label2}:`, 120, y);
-            doc.setFont(undefined, 'normal');
+            doc.setFont(THSarabunNew, 'normal');
             doc.text(`${val2 || ''}`, 150, y);
             y += 8;
         };
@@ -981,36 +984,36 @@ function generatePDF(row) {
         printLine("ชื่อเครื่อง", row["ชื่อเครื่อง"], "Brand", row["ยี่ห้อ"]);
         printLine("รุ่น", row["รุ่น"], "S/N", row["หมายเลขเครื่อง"]);
 
-        doc.setFont(undefined, 'bold');
+        doc.setFont(THSarabunNew, 'bold');
         doc.text("อุปกรณ์ที่ส่งมาด้วย:", 20, y);
-        doc.setFont(undefined, 'normal');
+        doc.setFont(THSarabunNew, 'normal');
         
         // ใช้ splitTextToSize สำหรับข้อความยาว
         const equipmentText = doc.splitTextToSize(safeText(row["อุปกรณ์ที่ส่งมาด้วย"] || ""), 150);
         doc.text(equipmentText, 60, y);
         y += equipmentText.length * 6;
 
-        doc.setFont(undefined, 'bold');
+        doc.setFont(THSarabunNew, 'bold');
         doc.text("อาการที่แจ้งเสีย:", 20, y);
         y += 8;
-        doc.setFont(undefined, 'normal');
+        doc.setFont(THSarabunNew, 'normal');
         
         const symptomText = doc.splitTextToSize(safeText(row["อาการที่แจ้งเสีย"] || ""), 150);
         doc.text(symptomText, 35, y);
         y += symptomText.length * 6 + 10;
 
-        doc.setFont(undefined, 'bold');
+        doc.setFont(THSarabunNew, 'bold');
         doc.text("ผลการซ่อม:", 20, y);
         y += 8;
-        doc.setFont(undefined, 'normal');
+        doc.setFont(THSarabunNew, 'normal');
         
         const resultText = doc.splitTextToSize(safeText(row["ผลการซ่อม"] || ""), 150);
         doc.text(resultText, 35, y);
         y += resultText.length * 6 + 10;
 
-        doc.setFont(undefined, 'bold');
+        doc.setFont(THSarabunNew, 'bold');
         doc.text("รับประกัน:", 20, y);
-        doc.setFont(undefined, 'normal');
+        doc.setFont(THSarabunNew, 'normal');
         doc.text(safeText(row["รับประกัน"] || ""), 45, y);
         y += 10;
 
@@ -1029,10 +1032,10 @@ function generatePDF(row) {
         }
 
         // ลายเซ็น
-        doc.setFont(undefined, 'bold');
+        doc.setFont(THSarabunNew, 'bold');
         doc.text("IDMS", 50, y, { align: "center" });
         doc.text("Customer", 150, y, { align: "center" });
-        doc.setFont(undefined, 'normal');
+        doc.setFont(THSarabunNew, 'normal');
         y += 6;
 
         try {
