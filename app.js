@@ -943,7 +943,7 @@ function closeModal() {
     currentPDFRow = null;
 }
 
-// แก้ไขฟังก์ชัน generatePDF ให้ดีขึ้น
+// ฟังก์ชัน generatePDF 
 function generatePDF(row) {
     try {
         const jsPDFLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
@@ -951,8 +951,7 @@ function generatePDF(row) {
         const safeText = (val) => (val !== undefined && val !== null ? String(val) : "");
         
         // ใช้ฟอนต์มาตรฐาน
-        doc.setFont("helvetica");
-        doc.setFontSize(12);
+        doc.addFileToVFS("THSarabunNew.ttf", thsarabun); doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal"); doc.setFont("THSarabunNew"); doc.setFontSize(12);
 
         let y = 10;
 
