@@ -952,9 +952,9 @@ function generatePDF(row) {
         
         // ใช้ฟอนต์มาตรฐาน
         doc.addFileToVFS("THSarabunNew.ttf", thsarabun);
-doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
-doc.setFont("THSarabunNew"); 
-doc.setFontSize(12);
+        doc.addFont("THSarabunNew.ttf", "THSarabunNew", "normal");
+        doc.setFont("THSarabunNew"); 
+        doc.setFontSize(12);
 
         let y = 10;
 
