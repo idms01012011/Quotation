@@ -660,7 +660,12 @@ function openSection(sheet, mode = "add", rowData = null) {
 }
 
 function closeModal() {
-    document.getElementById("modal").classList.remove("show");
+    const modal = document.getElementById("modal");
+    modal.classList.remove("show");
+    
+    // ปิด signature popup ด้วย
+    const sigPopup = document.getElementById("signature-popup");
+    if (sigPopup) sigPopup.classList.remove("show");
 }
 
 function createInput(name, type = "text") {
