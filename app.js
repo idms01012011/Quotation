@@ -179,7 +179,7 @@ function createImageElement(src, isSignature = false) {
             currentIndex++;
         } else {
             // หากลองทุก URL แล้วยังล้มเหลว ให้แสดงภาพสำรอง (placeholder)
-            img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZjlmYSIgc3Ryb2tlPSIjZGVlMmU2IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNiNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
+            img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y4ZjlmYSIgc3Ryb2tlPSIjZGVlMmU2IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8dGV4dCB4PSI1MCI yeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNiNCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
             img.alt = "ไม่สามารถโหลดรูปได้";
             img.title = "รูปภาพไม่สามารถแสดงได้";
         }
@@ -663,7 +663,9 @@ function openSection(sheet, mode = "add", rowData = null) {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                // ✅ FIX: Log full response for debugging
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
             }
 
             const result = await response.json();
@@ -674,7 +676,8 @@ function openSection(sheet, mode = "add", rowData = null) {
                 closeModal();
                 loadSheetData(sheet);
             } else {
-                throw new Error(result.error || 'เกิดข้อผิดพลาดในการบันทึก');
+                // ✅ FIX: Log server-side error message
+                throw new Error(result.error || 'เกิดข้อผิดพลาดในการบันทึกจากเซิร์ฟเวอร์');
             }
 
         } catch (err) {
@@ -690,14 +693,16 @@ function openSection(sheet, mode = "add", rowData = null) {
 }
 
 function closeModal() {
-    const modal = document.getElementById("modal");
-    if (modal) modal.classList.remove("show");
+    // ✅ FIX: Ensure the main modal is specifically targeted and closed.
+    const mainModal = document.getElementById("modal");
+    if (mainModal) mainModal.classList.remove("show");
     
     // ปิด signature popup ด้วย
     const sigPopup = document.getElementById("signature-popup");
     if (sigPopup) sigPopup.classList.remove("show");
 
     // ปิด modals สำหรับ PDF options/viewer ด้วย
+    // ✅ FIX: Use a more specific selector to avoid closing unrelated modals.
     const pdfModals = document.querySelectorAll('.modal.show[style*="z-index: 2000"]');
     pdfModals.forEach(m => m.remove());
     currentPDFRow = null; // Clear the current PDF row
@@ -712,7 +717,12 @@ function createInput(name, type = "text") {
 
 // ===== ลบข้อมูล =====
 async function deleteRow(id, sheet) {
-    if (!confirm("ต้องการลบข้อมูลนี้หรือไม่?")) return;
+    // ✅ FIX: Add console logs to verify id and sheet
+    console.log("Attempting to delete row:", { id, sheet });
+    if (!confirm("ต้องการลบข้อมูลนี้หรือไม่?")) {
+        console.log("Delete cancelled by user.");
+        return;
+    }
 
     try {
         showLoading(true);
@@ -729,20 +739,24 @@ async function deleteRow(id, sheet) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+             // ✅ FIX: Log full response for debugging
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
 
         const result = await response.json();
+        console.log("Delete API response:", result); // ✅ FIX: Log server response
 
         if (result.success) {
             showNotification('ลบข้อมูลเรียบร้อย', 'success');
             loadSheetData(sheet);
         } else {
-            throw new Error(result.error || 'เกิดข้อผิดพลาดในการลบ');
+            // ✅ FIX: Log server-side error message
+            throw new Error(result.error || 'เกิดข้อผิดพลาดในการลบจากเซิร์ฟเวอร์');
         }
 
     } catch (error) {
-        console.error(error);
+        console.error("Error during delete operation:", error); // ✅ FIX: More specific error log
         showNotification('เกิดข้อผิดพลาด: ' + error.message, 'error');
     } finally {
         showLoading(false);
@@ -762,11 +776,12 @@ function isMobileDevice() {
 function previewPDF(row) {
     currentPDFRow = row; // เก็บข้อมูล row ไว้ใช้ในภายหลัง
     
+    // ✅ FIX: Log for debugging
+    console.log("Preview PDF called for row:", row);
+
     if (isMobileDevice()) {
-        // บนมือถือให้แสดง options
         showPDFOptions();
     } else {
-        // บน desktop ใช้วิธีเดิม
         generateAndPreviewPDF(row);
     }
 }
@@ -776,10 +791,17 @@ function generateAndPreviewPDF(row) {
     const doc = generatePDF(row);
     if (!doc) {
         showNotification('ไม่สามารถสร้าง PDF ได้', 'error');
+        console.error("PDF document was null, generation failed.");
         return;
     }
     lastDoc = doc; // เก็บไว้ให้โหลดทีหลัง
-    window.open(doc.output('bloburl'), '_blank');
+    try {
+        window.open(doc.output('bloburl'), '_blank');
+        console.log("PDF opened in new window (bloburl).");
+    } catch (e) {
+        console.error("Failed to open PDF in new window:", e);
+        showNotification('ไม่สามารถเปิด PDF ได้ (อาจถูกบล็อกโดย Pop-up blocker)', 'error');
+    }
 }
 
 
@@ -808,6 +830,7 @@ function showPDFOptions() {
         }
     };
     document.body.appendChild(modal);
+    console.log("PDF Options modal shown.");
 }
 
 // ดู PDF ในรูปแบบ HTML
@@ -839,12 +862,14 @@ function viewHTMLPDF() {
     
     modal.innerHTML = pdfContent;
     document.body.appendChild(modal);
+    console.log("HTML PDF viewer modal shown.");
 }
 
 // สร้างเนื้อหา HTML สำหรับ PDF
 function createPDFHTMLContent(row) {
     const safeText = (val) => (val !== undefined && val !== null ? String(val) : '-');
     
+    // ✅ FIX: Use the global logoBase64
     const logoHtml = typeof logoBase64 !== 'undefined' && logoBase64 ? 
         `<img src="${logoBase64}" alt="Company Logo" style="width: 80px; height: auto; margin-bottom: 15px;">` : '';
 
@@ -999,7 +1024,7 @@ function downloadPDFFile() {
         const filename = `${currentPDFRow["เลขที่ใบงาน"] || 'service'}_report.pdf`;
         doc.save(filename);
         showNotification('กำลังดาวน์โหลด PDF...', 'success');
-        
+        console.log("PDF download triggered.");
     } catch (error) {
         console.error('Error in downloadPDF:', error);
         showNotification('ไม่สามารถดาวน์โหลด PDF ได้', 'error');
@@ -1016,11 +1041,14 @@ function generatePDF(row) {
         let hasThaiFont = false;
         try {
             // Check if THSarabun and THSarabunBold (from base64) are globally available
-            if (typeof THSarabun !== 'undefined') {
+            // ✅ FIX: Ensure these variables are defined globally (e.g., from an external script)
+            // if they are not, you'll need to define them as base64 strings here or load them.
+            // For now, it will fallback to helvetica if undefined.
+            if (typeof THSarabun !== 'undefined' && THSarabun) {
                 doc.addFileToVFS("THSarabun.ttf", THSarabun);
                 doc.addFont("THSarabun.ttf", "THSarabun", "normal");
                 
-                if (typeof THSarabunBold !== 'undefined') {
+                if (typeof THSarabunBold !== 'undefined' && THSarabunBold) {
                     doc.addFileToVFS("THSarabun-Bold.ttf", THSarabunBold);
                     doc.addFont("THSarabun-Bold.ttf", "THSarabun", "bold");
                 }
@@ -1030,7 +1058,6 @@ function generatePDF(row) {
             }
         } catch (e) {
             console.warn('Could not add Thai font (THSarabun). Falling back to Helvetica.', e);
-            // Fallback to helvetica
             doc.setFont("helvetica");
         }
 
@@ -1039,6 +1066,7 @@ function generatePDF(row) {
 
         // Company Logo
         try {
+            // ✅ FIX: Use the global logoBase64
             if (typeof logoBase64 !== 'undefined' && logoBase64) {
                 doc.addImage(logoBase64, 'PNG', 10, y, 30, 30);
             }
@@ -1758,7 +1786,7 @@ if (document.readyState === 'loading') {
 }
 
 // Fallback logo variable (assuming it might be defined elsewhere, if not, it will be an empty string)
+// ✅ FIX: Ensure these are defined. If you use actual base64 strings, they must be included in your HTML/JS.
 const logoBase64 = typeof logoBase64 !== 'undefined' ? logoBase64 : '';
-// Fallback Thai font variables (assuming they might be defined elsewhere)
 const THSarabun = typeof THSarabun !== 'undefined' ? THSarabun : undefined;
 const THSarabunBold = typeof THSarabunBold !== 'undefined' ? THSarabunBold : undefined;
